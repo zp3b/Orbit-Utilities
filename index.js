@@ -42,6 +42,12 @@ function getUser(id) {
       lastSlots: 0
     };
   }
+
+  // safety fixes so old users don’t crash bot
+  data[id].lastWork ??= 0;
+  data[id].lastSlots ??= 0;
+  data[id].lastRob ??= 0;
+
   return data[id];
 }
 
@@ -63,7 +69,7 @@ client.once("ready", () => {
 });
 
 // ======================
-// 📦 COMMANDS
+// 📦 COMMAND HANDLER
 // ======================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
@@ -74,23 +80,6 @@ client.on("messageCreate", async (message) => {
 
   const user = getUser(message.author.id);
   const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
-
-  // ======================
-  // 💜 BANK RESET (ONLY BANK)
-  // ======================
-  if (cmd === "resetbank") {
-    if (!isAdmin) return;
-
-    const target = message.mentions.users.first() || message.author;
-    const t = getUser(target.id);
-
-    t.bank = 0;
-    t.bankLimit = 5000;
-
-    save();
-
-    return message.reply(`🏦 Bank reset for ${target.username}`);
-  }
 
   // ======================
   // 💜 HELP
@@ -124,12 +113,15 @@ client.on("messageCreate", async (message) => {
 💀 Crime:
 .rob @user
 
-🏆 Ranking:
+🏆 Leaderboard:
 .top
+
+🧰 Utility:
+.ping
+.avatar
 
 👮 Admin:
 .admhelp
-.resetbank @user
     `);
   }
 
@@ -141,13 +133,46 @@ client.on("messageCreate", async (message) => {
     return message.reply(`💜 Wallet: ${user.orbits}`);
   }
 
-  if (cmd === "bankbalance") {
-    return message.reply(`🏦 Bank: ${user.bank} / ${user.bankLimit}`);
+  if (cmd === "daily") {
+    if (Date.now() - user.lastDaily < 86400000)
+      return message.reply("⏳ Already claimed daily.");
+
+    const reward = Math.floor(Math.random() * 200) + 150;
+    user.orbits += reward;
+    user.lastDaily = Date.now();
+    save();
+
+    return message.reply(`💜 +${reward}`);
+  }
+
+  // ======================
+  // 💼 WORK (FIXED)
+  // ======================
+
+  if (cmd === "work") {
+    const now = Date.now();
+
+    if (now - user.lastWork < 60000)
+      return message.reply("⏳ Wait 1 minute before working again.");
+
+    const jobs = ["Dev", "Miner", "Trader", "Builder", "Farmer"];
+    const job = jobs[Math.floor(Math.random() * jobs.length)];
+    const earn = Math.floor(Math.random() * 150) + 50;
+
+    user.orbits += earn;
+    user.lastWork = now;
+    save();
+
+    return message.reply(`💼 ${job} job complete +${earn} 💜`);
   }
 
   // ======================
   // 💳 BANK SYSTEM
   // ======================
+
+  if (cmd === "bankbalance") {
+    return message.reply(`🏦 Bank: ${user.bank} / ${user.bankLimit}`);
+  }
 
   if (cmd === "paybank") {
     const amount = parseInt(args[0]);
@@ -159,7 +184,7 @@ client.on("messageCreate", async (message) => {
       return message.reply("Not enough Orbits.");
 
     if (user.bank + amount > user.bankLimit)
-      return message.reply(`🏦 Bank limit reached (${user.bankLimit})`);
+      return message.reply("🏦 Bank limit reached.");
 
     user.orbits -= amount;
     user.bank += amount;
@@ -182,46 +207,6 @@ client.on("messageCreate", async (message) => {
     save();
 
     return message.reply(`🏦 Withdrew ${amount}`);
-  }
-
-  // ======================
-  // 🛒 SHOP
-  // ======================
-
-  if (cmd === "shop") {
-    let msg = "🛒 ORBIT SHOP\n\n";
-
-    for (let i in shop) {
-      msg += `${i} — 💜 ${shop[i].price}\n${shop[i].desc}\n\n`;
-    }
-
-    return message.reply(msg);
-  }
-
-  if (cmd === "buy") {
-    const item = args[0];
-    if (!shop[item]) return message.reply("Invalid item.");
-
-    if (user.orbits < shop[item].price)
-      return message.reply("Not enough Orbits.");
-
-    user.orbits -= shop[item].price;
-
-    // 🏦 BANK UPGRADE
-    if (item === "bankupgrade") {
-      user.bankLimit = 100000;
-      save();
-      return message.reply("🏦 Bank upgraded to 100,000!");
-    }
-
-    user.inventory.push(item);
-    save();
-
-    return message.reply(`🛒 Bought ${item}`);
-  }
-
-  if (cmd === "inventory") {
-    return message.reply(user.inventory.length ? user.inventory.join(", ") : "Empty");
   }
 
   // ======================
@@ -254,23 +239,24 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 🎰 SLOTS
+  // 🎰 SLOTS (FIXED)
   // ======================
 
   if (cmd === "slots") {
     const now = Date.now();
 
     if (now - user.lastSlots < 300000)
-      return message.reply("5 min cooldown.");
+      return message.reply("⏳ 5 min cooldown.");
 
     const cost = 100;
+
     if (user.orbits < cost)
       return message.reply("Not enough Orbits.");
 
     user.orbits -= cost;
     user.lastSlots = now;
 
-    const icons = ["💜", "💰", "⭐", "💀"];
+    const icons = ["💜", "💰", "⭐", "💀", "🍀"];
 
     const r1 = icons[Math.floor(Math.random() * icons.length)];
     const r2 = icons[Math.floor(Math.random() * icons.length)];
@@ -278,13 +264,52 @@ client.on("messageCreate", async (message) => {
 
     let win = 0;
 
-    if (r1 === r2 && r2 === r3) win = 800;
-    else if (r1 === r2 || r2 === r3 || r1 === r3) win = 200;
+    if (r1 === r2 && r2 === r3) win = 1000;
+    else if (r1 === r2 || r2 === r3 || r1 === r3) win = 250;
 
     user.orbits += win;
     save();
 
-    return message.reply(`🎰 ${r1} ${r2} ${r3} | ${win ? "+" + win : "No win"}`);
+    return message.reply(`🎰 ${r1} | ${r2} | ${r3}\n${win ? "Won +" + win : "No win 😭"}`);
+  }
+
+  // ======================
+  // 🛒 SHOP
+  // ======================
+
+  if (cmd === "shop") {
+    let msg = "🛒 ORBIT SHOP\n\n";
+
+    for (let i in shop) {
+      msg += `${i} — 💜 ${shop[i].price}\n${shop[i].desc}\n\n`;
+    }
+
+    return message.reply(msg);
+  }
+
+  if (cmd === "buy") {
+    const item = args[0];
+    if (!shop[item]) return message.reply("Invalid item.");
+
+    if (user.orbits < shop[item].price)
+      return message.reply("Not enough Orbits.");
+
+    user.orbits -= shop[item].price;
+
+    if (item === "bankupgrade") {
+      user.bankLimit = 100000;
+      save();
+      return message.reply("🏦 Bank upgraded to 100k!");
+    }
+
+    user.inventory.push(item);
+    save();
+
+    return message.reply(`🛒 Bought ${item}`);
+  }
+
+  if (cmd === "inventory") {
+    return message.reply(user.inventory.length ? user.inventory.join(", ") : "Empty");
   }
 
   // ======================
@@ -324,27 +349,18 @@ client.on("messageCreate", async (message) => {
     if (!isAdmin) return;
 
     return message.reply(`
-👮 ADMIN COMMANDS
+👮 ADMIN
 
 .resetbank @user
-.resetdata @user
 .addorbits
 .resetorbits
     `);
   }
 
-  if (cmd === "resetbank") {
+  if (cmd === "resetorbits") {
     if (!isAdmin) return;
-
-    const t = message.mentions.users.first() || message.author;
-    const u = getUser(t.id);
-
-    u.bank = 0;
-    u.bankLimit = 5000;
-
-    save();
-
-    return message.reply(`🏦 Bank reset for ${t.username}`);
+    const t = message.mentions.users.first();
+    if (t) getUser(t.id).orbits = 0, save();
   }
 
   if (cmd === "addorbits") {
@@ -354,10 +370,17 @@ client.on("messageCreate", async (message) => {
     if (t && amt) getUser(t.id).orbits += amt, save();
   }
 
-  if (cmd === "resetorbits") {
+  if (cmd === "resetbank") {
     if (!isAdmin) return;
-    const t = message.mentions.users.first();
-    if (t) getUser(t.id).orbits = 0, save();
+    const t = message.mentions.users.first() || message.author;
+    const u = getUser(t.id);
+
+    u.bank = 0;
+    u.bankLimit = 5000;
+
+    save();
+
+    return message.reply("🏦 Bank reset");
   }
 });
 

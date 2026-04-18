@@ -12,7 +12,7 @@ const client = new Client({
 const prefix = ".";
 
 // ======================
-// 💾 DATABASE
+// 💾 DATABASE RESET SAFE
 // ======================
 let data = {};
 
@@ -36,7 +36,8 @@ function getUser(id) {
       warnings: 0,
       lastDaily: 0,
       lastWork: 0,
-      lastRob: 0
+      lastRob: 0,
+      lastSlots: 0
     };
   }
   return data[id];
@@ -59,7 +60,7 @@ client.once("ready", () => {
 });
 
 // ======================
-// 📦 COMMAND HANDLER
+// 📦 COMMANDS
 // ======================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
@@ -69,7 +70,6 @@ client.on("messageCreate", async (message) => {
   const cmd = args.shift().toLowerCase();
 
   const user = getUser(message.author.id);
-
   const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
 
   // ======================
@@ -109,21 +109,30 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 💀 ROB (30 MIN COOLDOWN + NO ZERO TARGET)
+  // 💀 ROB (FIXED RULES)
   // ======================
 
   if (cmd === "rob") {
     const target = message.mentions.users.first();
     if (!target) return message.reply("Mention someone.");
 
+    // 🚫 no bots
+    if (target.bot) return message.reply("🚫 You can't rob bots.");
+
+    // 🚫 no self rob
+    if (target.id === message.author.id)
+      return message.reply("🚫 You can't rob yourself.");
+
     const t = getUser(target.id);
 
     if (t.orbits <= 0)
       return message.reply("🚫 They have 0 Orbits.");
 
+    // ⏳ cooldown
     if (Date.now() - user.lastRob < 1800000)
       return message.reply("⏳ 30 min cooldown.");
 
+    // 🛡️ shield
     if (t.inventory.includes("shield"))
       return message.reply("🛡️ They are protected.");
 
@@ -139,15 +148,23 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 🎰 SLOT GAMBLING
+  // 🎰 SLOTS (5 MIN COOLDOWN)
   // ======================
 
   if (cmd === "slots") {
+    const now = Date.now();
+
+    if (now - user.lastSlots < 300000) {
+      const left = Math.ceil((300000 - (now - user.lastSlots)) / 1000);
+      return message.reply(`⏳ Wait ${left}s before slots again.`);
+    }
+
     const cost = 100;
     if (user.orbits < cost)
       return message.reply("Not enough Orbits.");
 
     user.orbits -= cost;
+    user.lastSlots = now;
 
     const icons = ["💜", "💰", "⭐", "💀"];
 
@@ -167,7 +184,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 🛒 SHOP SYSTEM (FIXED)
+  // 🛒 SHOP SYSTEM
   // ======================
 
   if (cmd === "shop") {
@@ -201,7 +218,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 🏆 LEADERBOARD (FIXED)
+  // 🏆 LEADERBOARD
   // ======================
 
   if (cmd === "top") {
@@ -222,7 +239,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 👮 ADMIN SYSTEM
+  // 👮 ADMIN
   // ======================
 
   if (cmd === "addorbits") {
@@ -230,11 +247,9 @@ client.on("messageCreate", async (message) => {
 
     const target = message.mentions.users.first();
     const amount = parseInt(args[1]);
-
     if (!target || !amount) return;
 
-    const t = getUser(target.id);
-    t.orbits += amount;
+    getUser(target.id).orbits += amount;
     save();
 
     return message.reply(`💜 Added ${amount}`);
@@ -249,7 +264,7 @@ client.on("messageCreate", async (message) => {
     getUser(target.id).orbits = 0;
     save();
 
-    return message.reply("🧨 Orbits reset");
+    return message.reply("🧨 Reset Orbits");
   }
 
   if (cmd === "resetdata") {
@@ -265,31 +280,30 @@ client.on("messageCreate", async (message) => {
   }
 
   if (cmd === "admhelp") {
-    if (!isAdmin) return message.reply("No permission.");
+    if (!isAdmin) return;
 
     return message.reply(`
-👮 ADMIN HELP
+👮 ADMIN COMMANDS
 
-🛠 Moderation:
 .kick @user
 .ban @user
 .clear <amount>
 .warn @user
 
-💜 Orbit Control:
 .addorbits @user amount
 .resetorbits @user
 .resetdata @user
 
-⚠ Requires: Manage Roles
+⚠ Requires Manage Roles
     `);
   }
 
   // ======================
-  // 🧰 UTIL
+  // 🧰 UTILS
   // ======================
 
   if (cmd === "ping") return message.reply("🏓 Pong");
+
   if (cmd === "avatar") {
     const t = message.mentions.users.first() || message.author;
     return message.reply(t.displayAvatarURL({ size: 1024 }));
@@ -314,24 +328,20 @@ client.on("messageCreate", async (message) => {
 
   if (cmd === "kick") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
-
     const t = message.mentions.members.first();
     if (t) await t.kick();
   }
 
   if (cmd === "ban") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
-
     const t = message.mentions.members.first();
     if (t) await t.ban();
   }
 
   if (cmd === "clear") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
-
     const amount = parseInt(args[0]);
     if (!amount) return;
-
     await message.channel.bulkDelete(amount, true);
   }
 });

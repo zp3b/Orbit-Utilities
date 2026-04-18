@@ -33,6 +33,7 @@ function getUser(id) {
     data[id] = {
       orbits: 250,
       bank: 0,
+      bankLimit: 5000,
       inventory: [],
       warnings: 0,
       lastDaily: 0,
@@ -50,7 +51,8 @@ function getUser(id) {
 const shop = {
   shield: { price: 500, desc: "Protects from rob 🛡️" },
   boost: { price: 300, desc: "Luck boost ⚡" },
-  ticket: { price: 200, desc: "Cosmetic 🎟️" }
+  ticket: { price: 200, desc: "Cosmetic 🎟️" },
+  bankupgrade: { price: 15000, desc: "Upgrade bank to 100k storage 🏦" }
 };
 
 // ======================
@@ -74,11 +76,28 @@ client.on("messageCreate", async (message) => {
   const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
 
   // ======================
-  // 💜 HELP COMMAND
+  // 💜 BANK RESET (ONLY BANK)
+  // ======================
+  if (cmd === "resetbank") {
+    if (!isAdmin) return;
+
+    const target = message.mentions.users.first() || message.author;
+    const t = getUser(target.id);
+
+    t.bank = 0;
+    t.bankLimit = 5000;
+
+    save();
+
+    return message.reply(`🏦 Bank reset for ${target.username}`);
+  }
+
+  // ======================
+  // 💜 HELP
   // ======================
   if (cmd === "help") {
     return message.reply(`
-💜 **ORBIT UTILITIES**
+💜 ORBIT UTILITIES
 
 💰 Economy:
 .balance
@@ -108,75 +127,26 @@ client.on("messageCreate", async (message) => {
 🏆 Ranking:
 .top
 
-🧰 Utility:
-.ping
-.avatar
-
 👮 Admin:
 .admhelp
+.resetbank @user
     `);
   }
 
   // ======================
-  // 💜 ECONOMY
+  // 💰 ECONOMY
   // ======================
 
   if (cmd === "balance") {
-    return message.reply(`💜 Wallet: ${user.orbits} Orbits`);
+    return message.reply(`💜 Wallet: ${user.orbits}`);
   }
 
   if (cmd === "bankbalance") {
-    return message.reply(`🏦 Bank: ${user.bank} Orbits`);
-  }
-
-  if (cmd === "daily") {
-    if (Date.now() - user.lastDaily < 86400000)
-      return message.reply("⏳ Already claimed daily.");
-
-    const reward = Math.floor(Math.random() * 200) + 150;
-    user.orbits += reward;
-    user.lastDaily = Date.now();
-    save();
-
-    return message.reply(`💜 +${reward}`);
-  }
-
-  if (cmd === "work") {
-    if (Date.now() - user.lastWork < 60000)
-      return message.reply("⏳ Wait.");
-
-    const jobs = ["Dev", "Miner", "Trader", "Builder"];
-    const job = jobs[Math.floor(Math.random() * jobs.length)];
-    const earn = Math.floor(Math.random() * 150) + 50;
-
-    user.orbits += earn;
-    user.lastWork = Date.now();
-    save();
-
-    return message.reply(`💼 ${job} +${earn}`);
-  }
-
-  if (cmd === "pay") {
-    const target = message.mentions.users.first();
-    const amount = parseInt(args[1]);
-
-    if (!target || !amount || amount <= 0)
-      return message.reply("Usage: .pay @user <amount>");
-
-    const t = getUser(target.id);
-
-    if (user.orbits < amount)
-      return message.reply("Not enough Orbits.");
-
-    user.orbits -= amount;
-    t.orbits += amount;
-    save();
-
-    return message.reply(`💸 Sent ${amount} to ${target.username}`);
+    return message.reply(`🏦 Bank: ${user.bank} / ${user.bankLimit}`);
   }
 
   // ======================
-  // 🏦 BANK SYSTEM
+  // 💳 BANK SYSTEM
   // ======================
 
   if (cmd === "paybank") {
@@ -187,6 +157,9 @@ client.on("messageCreate", async (message) => {
 
     if (user.orbits < amount)
       return message.reply("Not enough Orbits.");
+
+    if (user.bank + amount > user.bankLimit)
+      return message.reply(`🏦 Bank limit reached (${user.bankLimit})`);
 
     user.orbits -= amount;
     user.bank += amount;
@@ -212,29 +185,62 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 💀 ROB SYSTEM
+  // 🛒 SHOP
+  // ======================
+
+  if (cmd === "shop") {
+    let msg = "🛒 ORBIT SHOP\n\n";
+
+    for (let i in shop) {
+      msg += `${i} — 💜 ${shop[i].price}\n${shop[i].desc}\n\n`;
+    }
+
+    return message.reply(msg);
+  }
+
+  if (cmd === "buy") {
+    const item = args[0];
+    if (!shop[item]) return message.reply("Invalid item.");
+
+    if (user.orbits < shop[item].price)
+      return message.reply("Not enough Orbits.");
+
+    user.orbits -= shop[item].price;
+
+    // 🏦 BANK UPGRADE
+    if (item === "bankupgrade") {
+      user.bankLimit = 100000;
+      save();
+      return message.reply("🏦 Bank upgraded to 100,000!");
+    }
+
+    user.inventory.push(item);
+    save();
+
+    return message.reply(`🛒 Bought ${item}`);
+  }
+
+  if (cmd === "inventory") {
+    return message.reply(user.inventory.length ? user.inventory.join(", ") : "Empty");
+  }
+
+  // ======================
+  // 💀 ROB
   // ======================
 
   if (cmd === "rob") {
     const target = message.mentions.users.first();
     if (!target) return message.reply("Mention someone.");
-
-    if (target.bot)
-      return message.reply("🚫 Can't rob bots.");
-
-    if (target.id === message.author.id)
-      return message.reply("🚫 Can't rob yourself.");
+    if (target.bot) return message.reply("No bots.");
+    if (target.id === message.author.id) return message.reply("No self rob.");
 
     const t = getUser(target.id);
 
     if (t.orbits <= 0)
-      return message.reply("🚫 They have no Orbits.");
+      return message.reply("They have nothing.");
 
     if (Date.now() - user.lastRob < 1800000)
-      return message.reply("⏳ 30 min cooldown.");
-
-    if (t.inventory.includes("shield"))
-      return message.reply("🛡️ Protected!");
+      return message.reply("30 min cooldown.");
 
     const amount = Math.floor(Math.random() * Math.min(200, t.orbits));
 
@@ -255,7 +261,7 @@ client.on("messageCreate", async (message) => {
     const now = Date.now();
 
     if (now - user.lastSlots < 300000)
-      return message.reply("⏳ Wait 5 min.");
+      return message.reply("5 min cooldown.");
 
     const cost = 100;
     if (user.orbits < cost)
@@ -282,38 +288,6 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 🛒 SHOP
-  // ======================
-
-  if (cmd === "shop") {
-    let msg = "🛒 ORBIT SHOP\n\n";
-    for (let i in shop) {
-      msg += `${i} — 💜 ${shop[i].price}\n${shop[i].desc}\n\n`;
-    }
-    return message.reply(msg);
-  }
-
-  if (cmd === "buy") {
-    const item = args[0];
-    if (!shop[item]) return message.reply("Invalid item.");
-
-    if (user.orbits < shop[item].price)
-      return message.reply("Not enough Orbits.");
-
-    user.orbits -= shop[item].price;
-    user.inventory.push(item);
-    save();
-
-    return message.reply(`🛒 Bought ${item}`);
-  }
-
-  if (cmd === "inventory") {
-    return message.reply(
-      `🎒 Inventory:\n${user.inventory.length ? user.inventory.join(", ") : "Empty"}`
-    );
-  }
-
-  // ======================
   // 🏆 LEADERBOARD
   // ======================
 
@@ -322,7 +296,7 @@ client.on("messageCreate", async (message) => {
       .sort((a, b) => b[1].orbits - a[1].orbits)
       .slice(0, 10);
 
-    let msg = "🏆 ORBIT LEADERBOARD\n\n";
+    let msg = "🏆 LEADERBOARD\n\n";
 
     sorted.forEach((u, i) => {
       msg += `${i + 1}. <@${u[0]}> — 💜 ${u[1].orbits}\n`;
@@ -346,6 +320,33 @@ client.on("messageCreate", async (message) => {
   // 👮 ADMIN
   // ======================
 
+  if (cmd === "admhelp") {
+    if (!isAdmin) return;
+
+    return message.reply(`
+👮 ADMIN COMMANDS
+
+.resetbank @user
+.resetdata @user
+.addorbits
+.resetorbits
+    `);
+  }
+
+  if (cmd === "resetbank") {
+    if (!isAdmin) return;
+
+    const t = message.mentions.users.first() || message.author;
+    const u = getUser(t.id);
+
+    u.bank = 0;
+    u.bankLimit = 5000;
+
+    save();
+
+    return message.reply(`🏦 Bank reset for ${t.username}`);
+  }
+
   if (cmd === "addorbits") {
     if (!isAdmin) return;
     const t = message.mentions.users.first();
@@ -357,64 +358,6 @@ client.on("messageCreate", async (message) => {
     if (!isAdmin) return;
     const t = message.mentions.users.first();
     if (t) getUser(t.id).orbits = 0, save();
-  }
-
-  if (cmd === "resetdata") {
-    if (!isAdmin) return;
-    const t = message.mentions.users.first();
-    if (t) delete data[t.id], save();
-  }
-
-  if (cmd === "admhelp") {
-    if (!isAdmin) return;
-
-    return message.reply(`
-👮 ADMIN COMMANDS
-
-.addorbits
-.resetorbits
-.resetdata
-.kick
-.ban
-.clear
-    `);
-  }
-
-  // ======================
-  // 🛠 MODERATION
-  // ======================
-
-  if (cmd === "kick") {
-    if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) return;
-    const t = message.mentions.members.first();
-    if (t) await t.kick();
-  }
-
-  if (cmd === "ban") {
-    if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) return;
-    const t = message.mentions.members.first();
-    if (t) await t.ban();
-  }
-
-  if (cmd === "clear") {
-    if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
-    const amt = parseInt(args[0]);
-    if (amt) await message.channel.bulkDelete(amt);
-  }
-
-  // ======================
-  // 🎉 FUN
-  // ======================
-
-  if (cmd === "coinflip")
-    return message.reply(Math.random() < 0.5 ? "Heads" : "Tails");
-
-  if (cmd === "roll")
-    return message.reply(`${Math.floor(Math.random() * 100) + 1}`);
-
-  if (cmd === "8ball") {
-    const replies = ["Yes", "No", "Maybe", "Definitely", "Ask again"];
-    return message.reply(replies[Math.floor(Math.random() * replies.length)]);
   }
 });
 

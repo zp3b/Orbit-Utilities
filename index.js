@@ -61,7 +61,7 @@ client.once("ready", () => {
 });
 
 // ======================
-// 📦 COMMAND HANDLER
+// 📦 COMMANDS
 // ======================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
@@ -72,6 +72,50 @@ client.on("messageCreate", async (message) => {
 
   const user = getUser(message.author.id);
   const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
+
+  // ======================
+  // 💜 HELP COMMAND
+  // ======================
+  if (cmd === "help") {
+    return message.reply(`
+💜 **ORBIT UTILITIES**
+
+💰 Economy:
+.balance
+.daily
+.work
+.pay @user <amount>
+
+🏦 Bank:
+.paybank <amount>
+.withdraw <amount>
+.bankbalance
+
+🎰 Gambling:
+.slots
+.coinflip
+.roll
+.8ball
+
+🛒 Shop:
+.shop
+.buy <item>
+.inventory
+
+💀 Crime:
+.rob @user
+
+🏆 Ranking:
+.top
+
+🧰 Utility:
+.ping
+.avatar
+
+👮 Admin:
+.admhelp
+    `);
+  }
 
   // ======================
   // 💜 ECONOMY
@@ -94,7 +138,7 @@ client.on("messageCreate", async (message) => {
     user.lastDaily = Date.now();
     save();
 
-    return message.reply(`💜 +${reward} Orbits`);
+    return message.reply(`💜 +${reward}`);
   }
 
   if (cmd === "work") {
@@ -112,6 +156,29 @@ client.on("messageCreate", async (message) => {
     return message.reply(`💼 ${job} +${earn}`);
   }
 
+  if (cmd === "pay") {
+    const target = message.mentions.users.first();
+    const amount = parseInt(args[1]);
+
+    if (!target || !amount || amount <= 0)
+      return message.reply("Usage: .pay @user <amount>");
+
+    const t = getUser(target.id);
+
+    if (user.orbits < amount)
+      return message.reply("Not enough Orbits.");
+
+    user.orbits -= amount;
+    t.orbits += amount;
+    save();
+
+    return message.reply(`💸 Sent ${amount} to ${target.username}`);
+  }
+
+  // ======================
+  // 🏦 BANK SYSTEM
+  // ======================
+
   if (cmd === "paybank") {
     const amount = parseInt(args[0]);
 
@@ -125,7 +192,7 @@ client.on("messageCreate", async (message) => {
     user.bank += amount;
     save();
 
-    return message.reply(`💳 Deposited ${amount} into bank`);
+    return message.reply(`💳 Deposited ${amount}`);
   }
 
   if (cmd === "withdraw") {
@@ -302,7 +369,7 @@ client.on("messageCreate", async (message) => {
     if (!isAdmin) return;
 
     return message.reply(`
-👮 ADMIN PANEL
+👮 ADMIN COMMANDS
 
 .addorbits
 .resetorbits

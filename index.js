@@ -101,7 +101,7 @@ client.on("messageCreate", async (message) => {
   const user = getUser(message.author.id);
 
   const isAdmin = isAdminUser(message.author.id) || 
-    message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
+    message.member.permissions.has(PermissionsBitField.Flags.Administrator);
 
   const e = (t, d, c="Purple") => new EmbedBuilder().setColor(c).setTitle(t).setDescription(d);
 

@@ -1,0 +1,4 @@
+{
+  "badWords": ["fuck", "shit", "bitch", "asshole"],
+  "allowLinksForAdminsOnly": true
+}

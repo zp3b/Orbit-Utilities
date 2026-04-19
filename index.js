@@ -19,20 +19,39 @@ const client = new Client({
 const prefix = ".";
 
 // ======================
-// 💾 DATABASE
+// 💾 DATABASE SYSTEM
 // ======================
-let data = {};
-if (fs.existsSync("./data.json")) {
-  try { data = JSON.parse(fs.readFileSync("./data.json")); } catch {}
+let economy = {};
+let adminData = { admins: [] };
+let automod = { badWords: [], allowLinksForAdminsOnly: true };
+
+if (fs.existsSync("./economy.json")) {
+  try { economy = JSON.parse(fs.readFileSync("./economy.json")); } catch {}
 }
 
-function save() {
-  fs.writeFileSync("./data.json", JSON.stringify(data, null, 2));
+if (fs.existsSync("./admin.json")) {
+  try { adminData = JSON.parse(fs.readFileSync("./admin.json")); } catch {}
+}
+
+if (fs.existsSync("./automod.json")) {
+  try { automod = JSON.parse(fs.readFileSync("./automod.json")); } catch {}
+}
+
+function saveEconomy() {
+  fs.writeFileSync("./economy.json", JSON.stringify(economy, null, 2));
+}
+
+function saveAdmins() {
+  fs.writeFileSync("./admin.json", JSON.stringify(adminData, null, 2));
+}
+
+function saveAutomod() {
+  fs.writeFileSync("./automod.json", JSON.stringify(automod, null, 2));
 }
 
 function getUser(id) {
-  if (!data[id]) {
-    data[id] = {
+  if (!economy[id]) {
+    economy[id] = {
       orbits: 250,
       bank: 0,
       bankLimit: 5000,
@@ -45,36 +64,89 @@ function getUser(id) {
       lastRob: 0
     };
   }
-  return data[id];
+  return economy[id];
+}
+
+function isAdminUser(id) {
+  return adminData.admins.includes(id);
+}
+
+function containsBadWord(msg) {
+  const lower = msg.toLowerCase();
+  return automod.badWords.some(w => lower.includes(w));
+}
+
+function containsLink(msg) {
+  return /(https?:\/\/|www\.|discord\.gg)/i.test(msg);
 }
 
 // ======================
-// 🎭 ROLE SHOP (EDIT IDS)
+// 🎭 ROLE SHOP
 // ======================
 const roleShop = {
-  vip: { price: 5000, roleId: "1495360156941422753", desc: "VIP access" },
-  elite: { price: 15000, roleId: "1495360406921805976", desc: "Elite status" }
+  vip: { price: 5000, roleId: "PUT_ROLE_ID", desc: "VIP access" },
+  elite: { price: 15000, roleId: "PUT_ROLE_ID", desc: "Elite status" }
 };
 
-// ======================
 client.once("ready", () => {
-  console.log("💜 Orbit CLEAN ONLINE");
+  console.log("💜 Orbit FULL ONLINE");
 });
 
 // ======================
-// 📦 COMMANDS
+// 📦 COMMANDS + AUTOMOD
 // ======================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
+
+  const user = getUser(message.author.id);
+
+  const isAdmin = isAdminUser(message.author.id) || 
+    message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
+
+  const e = (t, d, c="Purple") => new EmbedBuilder().setColor(c).setTitle(t).setDescription(d);
+
+  // ======================
+  // 🚫 AUTOMOD
+  // ======================
+  if (!isAdmin) {
+    if (containsBadWord(message.content)) {
+      message.delete().catch(() => {});
+      user.warnings++;
+      saveEconomy();
+
+      return message.channel.send({
+        embeds: [
+          new EmbedBuilder()
+            .setColor("Red")
+            .setTitle("🚫 Message Removed")
+            .setDescription(`${message.author}, watch your language.\nWarnings: ${user.warnings}`)
+        ]
+      });
+    }
+
+    if (automod.allowLinksForAdminsOnly && containsLink(message.content)) {
+      message.delete().catch(() => {});
+      user.warnings++;
+      saveEconomy();
+
+      return message.channel.send({
+        embeds: [
+          new EmbedBuilder()
+            .setColor("Red")
+            .setTitle("🔗 Links Not Allowed")
+            .setDescription(`${message.author}, you cannot send links.\nWarnings: ${user.warnings}`)
+        ]
+      });
+    }
+  }
+
+  // ======================
+  // PREFIX CHECK (AFTER AUTOMOD)
+  // ======================
   if (!message.content.startsWith(prefix)) return;
 
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const cmd = args.shift().toLowerCase();
-
-  const user = getUser(message.author.id);
-  const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
-
-  const e = (t, d, c="Purple") => new EmbedBuilder().setColor(c).setTitle(t).setDescription(d);
 
   // ======================
   // 💜 HELP
@@ -82,16 +154,14 @@ client.on("messageCreate", async (message) => {
   if (cmd === "help") {
     return message.reply({
       embeds: [e("💜 Orbit Help", `
-💰 balance, daily, work, pay  
+💰 balance, daily, work  
 🏦 bankbalance, paybank, withdraw  
 🎰 spin  
 💀 rob  
-🛒 shop, inventory  
 🎭 roleshop, buyrole  
-🏆 prestige  
-🏆 leaderboard  
+🏆 prestige, leaderboard  
 🎱 8ball  
-🧰 ping, avatar, userinfo, serverinfo, uptime  
+🧰 ping, avatar, serverinfo, uptime  
 🛠 kick, ban, clear, timeout  
 👮 admhelp
       `)]
@@ -121,7 +191,7 @@ client.on("messageCreate", async (message) => {
     const reward = Math.floor(Math.random()*200)+150;
     user.orbits += reward;
     user.lastDaily = Date.now();
-    save();
+    saveEconomy();
 
     return message.reply({ embeds:[e("💜 Daily",`+${reward} Orbits`)] });
   }
@@ -133,7 +203,7 @@ client.on("messageCreate", async (message) => {
     const earn = Math.floor(Math.random()*150)+50;
     user.orbits += earn;
     user.lastWork = Date.now();
-    save();
+    saveEconomy();
 
     return message.reply({ embeds:[e("💼 Work",`+${earn} Orbits`)] });
   }
@@ -145,7 +215,7 @@ client.on("messageCreate", async (message) => {
     const reward = Math.floor(Math.random()*400);
     user.orbits += reward;
     user.lastSpin = Date.now();
-    save();
+    saveEconomy();
 
     return message.reply({ embeds:[e("🎰 Spin",`+${reward} Orbits`)] });
   }
@@ -169,7 +239,7 @@ client.on("messageCreate", async (message) => {
     user.orbits += steal;
     target.orbits -= steal;
     user.lastRob = Date.now();
-    save();
+    saveEconomy();
 
     return message.reply({ embeds:[e("💀 Rob",`Stole ${steal}`)] });
   }
@@ -190,7 +260,7 @@ client.on("messageCreate", async (message) => {
 
     user.orbits -= amt;
     user.bank += amt;
-    save();
+    saveEconomy();
 
     return message.reply({ embeds:[e("🏦 Deposit",`+${amt}`)] });
   }
@@ -202,16 +272,16 @@ client.on("messageCreate", async (message) => {
 
     user.bank -= amt;
     user.orbits += amt;
-    save();
+    saveEconomy();
 
     return message.reply({ embeds:[e("🏦 Withdraw",`${amt}`)] });
   }
 
   // ======================
-  // 🏆 LEADERBOARD (ADDED)
+  // 🏆 LEADERBOARD
   // ======================
   if (cmd === "leaderboard") {
-    const sorted = Object.entries(data)
+    const sorted = Object.entries(economy)
       .sort((a, b) => (b[1].orbits + b[1].bank) - (a[1].orbits + a[1].bank))
       .slice(0, 10);
 
@@ -277,7 +347,7 @@ client.on("messageCreate", async (message) => {
     await message.member.roles.add(role);
 
     user.orbits -= item.price;
-    save();
+    saveEconomy();
 
     return message.reply({ embeds:[e("🎭 Role Purchased", role.name)] });
   }
@@ -292,7 +362,7 @@ client.on("messageCreate", async (message) => {
     user.orbits = 250;
     user.bank = 0;
     user.prestige++;
-    save();
+    saveEconomy();
 
     return message.reply({ embeds:[e("🏆 Prestige",`Level ${user.prestige}`)] });
   }
@@ -316,7 +386,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 🧰 UTILITY + MODERATION (UNCHANGED BELOW)
+  // 🧰 UTILITY
   // ======================
   if (cmd === "ping") return message.reply({ embeds:[e("🏓 Ping","Pong")] });
 
@@ -333,6 +403,9 @@ client.on("messageCreate", async (message) => {
   if (cmd === "uptime")
     return message.reply({ embeds:[e("⏱ Uptime",`${Math.floor(client.uptime/1000)}s`)] });
 
+  // ======================
+  // 🛠 MODERATION
+  // ======================
   if (cmd === "clear") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
     const amt = parseInt(args[0]);
@@ -357,14 +430,19 @@ client.on("messageCreate", async (message) => {
     if (t) t.timeout(60000);
   }
 
+  // ======================
+  // 👮 ADMIN
+  // ======================
   if (cmd === "admhelp") {
     if (!isAdmin) return;
     return message.reply({ embeds:[e("👮 Admin",`
 .addorbits
 .resetorbits
 .resetbank
-.say
-.slowmode
+.addadmin
+.removeadmin
+.addbadword
+.removebadword
     `)] });
   }
 
@@ -372,13 +450,19 @@ client.on("messageCreate", async (message) => {
     if (!isAdmin) return;
     const t = message.mentions.users.first();
     const amt = parseInt(args[1]);
-    if (t && amt) getUser(t.id).orbits += amt, save();
+    if (t && amt) {
+      getUser(t.id).orbits += amt;
+      saveEconomy();
+    }
   }
 
   if (cmd === "resetorbits") {
     if (!isAdmin) return;
     const t = message.mentions.users.first();
-    if (t) getUser(t.id).orbits = 0, save();
+    if (t) {
+      getUser(t.id).orbits = 0;
+      saveEconomy();
+    }
   }
 
   if (cmd === "resetbank") {
@@ -388,8 +472,50 @@ client.on("messageCreate", async (message) => {
       const u = getUser(t.id);
       u.bank = 0;
       u.bankLimit = 5000;
-      save();
+      saveEconomy();
     }
+  }
+
+  if (cmd === "addadmin") {
+    if (!isAdmin) return;
+    const id = args[0];
+    if (!id) return;
+
+    if (!adminData.admins.includes(id)) {
+      adminData.admins.push(id);
+      saveAdmins();
+    }
+
+    message.reply("✅ Admin added");
+  }
+
+  if (cmd === "removeadmin") {
+    if (!isAdmin) return;
+    const id = args[0];
+    adminData.admins = adminData.admins.filter(a => a !== id);
+    saveAdmins();
+
+    message.reply("❌ Admin removed");
+  }
+
+  if (cmd === "addbadword") {
+    if (!isAdmin) return;
+    const word = args[0];
+    if (!word) return;
+
+    automod.badWords.push(word.toLowerCase());
+    saveAutomod();
+
+    message.reply("✅ Word added");
+  }
+
+  if (cmd === "removebadword") {
+    if (!isAdmin) return;
+    const word = args[0];
+    automod.badWords = automod.badWords.filter(w => w !== word);
+    saveAutomod();
+
+    message.reply("❌ Word removed");
   }
 
 });

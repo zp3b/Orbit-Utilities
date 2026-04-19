@@ -49,72 +49,16 @@ function getUser(id) {
 }
 
 // ======================
-// 🛒 SHOP
+// 🎭 ROLE SHOP (EDIT IDS)
 // ======================
-const shop = {
-  shield: { price: 500, desc: "🛡️ Protect from rob" },
-  boost: { price: 300, desc: "⚡ More work earnings" },
-  bankupgrade: { price: 15000, desc: "🏦 Upgrade bank to 100k" }
+const roleShop = {
+  vip: { price: 5000, roleId: "PUT_ROLE_ID", desc: "VIP access" },
+  elite: { price: 15000, roleId: "PUT_ROLE_ID", desc: "Elite status" }
 };
 
 // ======================
-// 🎭 ROLE SHOP
-// ======================
-if (cmd === "roleshop") {
-  const embed = new EmbedBuilder()
-    .setColor("Purple")
-    .setTitle("💜 Orbit Role Shop")
-    .setDescription("Exchange Orbits for exclusive server roles!\n");
-
-  let i = 1;
-
-  for (let r in roleShop) {
-    embed.addFields({
-      name: `${i}: ${r.toUpperCase()}`,
-      value: `Price: **${roleShop[r].price} 💜**\n${roleShop[r].desc || "Exclusive role"}`
-    });
-    i++;
-  }
-
-  embed.setFooter({
-    text: `Purchases are non-refundable | Your balance: ${user.orbits} 💜`
-  });
-
-  return message.reply({ embeds: [embed] });
-}
-// ======================
 client.once("ready", () => {
-  console.log("💜 Orbit V8+ EMBED ONLINE");
-});
-
-// ======================
-// 👋 JOIN / LEAVE
-// ======================
-client.on("guildMemberAdd", member => {
-  const ch = member.guild.channels.cache.get(process.env.WELCOME_CHANNEL_ID);
-  if (!ch) return;
-
-  ch.send({
-    embeds: [new EmbedBuilder()
-      .setColor("Purple")
-      .setTitle("👋 Welcome")
-      .setDescription(`${member} joined the server`)
-      .setThumbnail(member.user.displayAvatarURL())
-    ]
-  });
-});
-
-client.on("guildMemberRemove", member => {
-  const ch = member.guild.channels.cache.get(process.env.WELCOME_CHANNEL_ID);
-  if (!ch) return;
-
-  ch.send({
-    embeds: [new EmbedBuilder()
-      .setColor("Red")
-      .setTitle("👋 Goodbye")
-      .setDescription(`${member.user.tag} left`)
-    ]
-  });
+  console.log("💜 Orbit CLEAN ONLINE");
 });
 
 // ======================
@@ -130,24 +74,25 @@ client.on("messageCreate", async (message) => {
   const user = getUser(message.author.id);
   const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
 
-  const embed = (title, desc, color="Purple") =>
-    new EmbedBuilder().setColor(color).setTitle(title).setDescription(desc);
+  const e = (t, d, c="Purple") => new EmbedBuilder().setColor(c).setTitle(t).setDescription(d);
 
   // ======================
   // 💜 HELP
   // ======================
   if (cmd === "help") {
     return message.reply({
-      embeds: [embed("💜 Orbit Help", `
-💰 Economy → balance, daily, work, pay  
-🏦 Bank → paybank, withdraw, bankbalance  
-🎰 Spin → spin  
-🛒 Shop → shop, buy, inventory, roleshop  
-💀 Crime → rob  
-🏆 Prestige → prestige  
-🧰 Utility → ping, avatar, userinfo, serverinfo, uptime, math  
-🛠 Mod → kick, ban, timeout, clear, warn, warnings  
-👮 Admin → admhelp
+      embeds: [e("💜 Orbit Help", `
+💰 balance, daily, work, pay  
+🏦 bankbalance, paybank, withdraw  
+🎰 spin  
+💀 rob  
+🛒 shop, inventory  
+🎭 roleshop, buyrole  
+🏆 prestige  
+🎱 8ball  
+🧰 ping, avatar, userinfo, serverinfo, uptime  
+🛠 kick, ban, clear, timeout  
+👮 admhelp
       `)]
     });
   }
@@ -159,7 +104,7 @@ client.on("messageCreate", async (message) => {
     return message.reply({
       embeds: [new EmbedBuilder()
         .setColor("Purple")
-        .setTitle(`${message.author.username}`)
+        .setTitle(message.author.username)
         .addFields(
           { name: "💜 Wallet", value: `${user.orbits}`, inline: true },
           { name: "🏦 Bank", value: `${user.bank}/${user.bankLimit}`, inline: true },
@@ -170,149 +115,140 @@ client.on("messageCreate", async (message) => {
 
   if (cmd === "daily") {
     if (Date.now() - user.lastDaily < 86400000)
-      return message.reply({ embeds:[embed("⏳ Daily","Already claimed","Red")] });
+      return message.reply({ embeds:[e("⏳ Daily","Already claimed","Red")] });
 
-    const reward = Math.floor(Math.random() * 200) + 150;
+    const reward = Math.floor(Math.random()*200)+150;
     user.orbits += reward;
     user.lastDaily = Date.now();
     save();
 
-    return message.reply({ embeds:[embed("💜 Daily Reward",`+${reward} Orbits`)] });
+    return message.reply({ embeds:[e("💜 Daily",`+${reward} Orbits`)] });
   }
 
   if (cmd === "work") {
     if (Date.now() - user.lastWork < 60000)
-      return message.reply({ embeds:[embed("⏳ Work","Wait 1 minute","Red")] });
+      return message.reply({ embeds:[e("⏳ Work","Wait 1 min","Red")] });
 
-    let earn = Math.floor(Math.random() * 150) + 50;
-    if (user.inventory.includes("boost")) earn *= 1.5;
-
-    user.orbits += Math.floor(earn);
+    const earn = Math.floor(Math.random()*150)+50;
+    user.orbits += earn;
     user.lastWork = Date.now();
     save();
 
-    return message.reply({ embeds:[embed("💼 Work",`+${Math.floor(earn)} Orbits`)] });
+    return message.reply({ embeds:[e("💼 Work",`+${earn} Orbits`)] });
   }
 
   if (cmd === "spin") {
     if (Date.now() - user.lastSpin < 300000)
-      return message.reply({ embeds:[embed("⏳ Spin","5 min cooldown","Red")] });
+      return message.reply({ embeds:[e("⏳ Spin","5 min cooldown","Red")] });
 
-    const reward = Math.floor(Math.random() * 400);
+    const reward = Math.floor(Math.random()*400);
     user.orbits += reward;
     user.lastSpin = Date.now();
     save();
 
-    return message.reply({ embeds:[embed("🎰 Spin",`You won +${reward} Orbits`)] });
+    return message.reply({ embeds:[e("🎰 Spin",`+${reward} Orbits`)] });
   }
 
+  // ======================
+  // 💀 ROB
+  // ======================
   if (cmd === "rob") {
     const t = message.mentions.users.first();
     if (!t || t.bot || t.id === message.author.id)
-      return message.reply({ embeds:[embed("❌ Rob","Invalid target","Red")] });
+      return message.reply({ embeds:[e("❌ Rob","Invalid target","Red")] });
 
     const target = getUser(t.id);
     if (target.orbits <= 0)
-      return message.reply({ embeds:[embed("💀 Rob","Target broke","Red")] });
+      return message.reply({ embeds:[e("💀 Rob","Target broke","Red")] });
 
     if (Date.now() - user.lastRob < 1800000)
-      return message.reply({ embeds:[embed("⏳ Rob","30 min cooldown","Red")] });
+      return message.reply({ embeds:[e("⏳ Rob","30 min cooldown","Red")] });
 
-    const steal = Math.floor(Math.random() * Math.min(200, target.orbits));
-
+    const steal = Math.floor(Math.random()*Math.min(200,target.orbits));
     user.orbits += steal;
     target.orbits -= steal;
     user.lastRob = Date.now();
     save();
 
-    return message.reply({ embeds:[embed("💀 Rob Success",`Stole ${steal} Orbits`)] });
+    return message.reply({ embeds:[e("💀 Rob",`Stole ${steal}`)] });
   }
 
   // ======================
   // 🏦 BANK
   // ======================
   if (cmd === "bankbalance")
-    return message.reply({ embeds:[embed("🏦 Bank",`${user.bank}/${user.bankLimit}`)] });
+    return message.reply({ embeds:[e("🏦 Bank",`${user.bank}/${user.bankLimit}`)] });
 
   if (cmd === "paybank") {
     const amt = parseInt(args[0]);
     if (!amt || user.orbits < amt)
-      return message.reply({ embeds:[embed("❌ Bank","Invalid amount","Red")] });
+      return message.reply({ embeds:[e("❌ Bank","Invalid","Red")] });
 
     if (user.bank + amt > user.bankLimit)
-      return message.reply({ embeds:[embed("🏦 Bank","Bank full","Red")] });
+      return message.reply({ embeds:[e("🏦 Bank","Full","Red")] });
 
     user.orbits -= amt;
     user.bank += amt;
     save();
 
-    return message.reply({ embeds:[embed("🏦 Deposit",`+${amt}`)] });
+    return message.reply({ embeds:[e("🏦 Deposit",`+${amt}`)] });
   }
 
   if (cmd === "withdraw") {
     const amt = parseInt(args[0]);
     if (!amt || user.bank < amt)
-      return message.reply({ embeds:[embed("❌ Withdraw","Invalid","Red")] });
+      return message.reply({ embeds:[e("❌ Withdraw","Invalid","Red")] });
 
     user.bank -= amt;
     user.orbits += amt;
     save();
 
-    return message.reply({ embeds:[embed("🏦 Withdraw",`${amt}`)] });
+    return message.reply({ embeds:[e("🏦 Withdraw",`${amt}`)] });
   }
 
   // ======================
-  // 🛒 SHOP
-  // ======================
-  if (cmd === "shop") {
-    let desc = "";
-    for (let i in shop) {
-      desc += `**${i}** — ${shop[i].price}\n${shop[i].desc}\n\n`;
-    }
-
-    return message.reply({ embeds:[embed("🛒 Shop", desc)] });
-  }
-
-  if (cmd === "inventory")
-    return message.reply({ embeds:[embed("🎒 Inventory", user.inventory.join(", ") || "Empty")] });
-
-  // ======================
-  // 🎭 ROLE SHOP (UPGRADED)
+  // 🎭 ROLE SHOP (BELU STYLE)
   // ======================
   if (cmd === "roleshop") {
-    const embedRS = new EmbedBuilder()
+    const embed = new EmbedBuilder()
       .setColor("Purple")
-      .setTitle("🎭 Orbit Role Shop")
-      .setDescription("Unlock exclusive roles using Orbits 💜");
+      .setTitle("💜 Orbit Role Shop")
+      .setDescription("Exchange Orbits for exclusive roles!\n");
 
+    let i = 1;
     for (let r in roleShop) {
-      embedRS.addFields({
-        name: `✨ ${r.toUpperCase()}`,
-        value: `💜 ${roleShop[r].price}\n${roleShop[r].desc}`
+      const item = roleShop[r];
+      embed.addFields({
+        name: `${i}: ${r.toUpperCase()}`,
+        value: `Price: **${item.price} 💜**\n${item.desc}`
       });
+      i++;
     }
 
-    return message.reply({ embeds:[embedRS] });
+    embed.setFooter({
+      text: `Balance: ${user.orbits} 💜`
+    });
+
+    return message.reply({ embeds:[embed] });
   }
 
   if (cmd === "buyrole") {
     const item = roleShop[args[0]];
-    if (!item)
-      return message.reply({ embeds:[embed("❌ Role","Invalid role","Red")] });
+    if (!item) return;
 
     if (user.orbits < item.price)
-      return message.reply({ embeds:[embed("❌ Role","Not enough","Red")] });
+      return message.reply({ embeds:[e("❌ Role","Not enough","Red")] });
 
     const role = message.guild.roles.cache.get(item.roleId);
     if (!role)
-      return message.reply({ embeds:[embed("❌ Role","Role missing","Red")] });
+      return message.reply({ embeds:[e("❌ Role","Missing role","Red")] });
 
     await message.member.roles.add(role);
 
     user.orbits -= item.price;
     save();
 
-    return message.reply({ embeds:[embed("🎭 Role Purchased", role.name)] });
+    return message.reply({ embeds:[e("🎭 Role Purchased", role.name)] });
   }
 
   // ======================
@@ -320,56 +256,51 @@ client.on("messageCreate", async (message) => {
   // ======================
   if (cmd === "prestige") {
     if (user.orbits < 50000)
-      return message.reply({ embeds:[embed("🏆 Prestige","Need 50k","Red")] });
+      return message.reply({ embeds:[e("🏆 Prestige","Need 50k","Red")] });
 
     user.orbits = 250;
     user.bank = 0;
     user.prestige++;
     save();
 
-    return message.reply({ embeds:[embed("🏆 Prestige",`Level ${user.prestige}`)] });
+    return message.reply({ embeds:[e("🏆 Prestige",`Level ${user.prestige}`)] });
+  }
+
+  // ======================
+  // 🎱 8BALL
+  // ======================
+  if (cmd === "8ball") {
+    const responses = ["Yes","No","Maybe","Definitely","Ask later","Probably"];
+    const res = responses[Math.floor(Math.random()*responses.length)];
+
+    return message.reply({
+      embeds:[new EmbedBuilder()
+        .setColor("Purple")
+        .setTitle("🎱 8Ball")
+        .addFields(
+          { name:"Question", value: args.join(" ") || "None" },
+          { name:"Answer", value: res }
+        )]
+    });
   }
 
   // ======================
   // 🧰 UTILITY
   // ======================
-  if (cmd === "ping")
-    return message.reply({ embeds:[embed("🏓 Ping","Pong")] });
+  if (cmd === "ping") return message.reply({ embeds:[e("🏓 Ping","Pong")] });
 
   if (cmd === "avatar") {
     const t = message.mentions.users.first() || message.author;
     return message.reply({
-      embeds:[new EmbedBuilder()
-        .setColor("Purple")
-        .setTitle(`${t.username}'s Avatar`)
-        .setImage(t.displayAvatarURL({ size: 1024 }))
-      ]
+      embeds:[new EmbedBuilder().setColor("Purple").setImage(t.displayAvatarURL({size:1024}))]
     });
   }
 
-  if (cmd === "userinfo") {
-    const t = message.mentions.users.first() || message.author;
-    return message.reply({
-      embeds:[embed("👤 User Info",`${t.username}\nID: ${t.id}`)]
-    });
-  }
-
-  if (cmd === "serverinfo") {
-    return message.reply({
-      embeds:[embed("🌐 Server",`${message.guild.name}\nMembers: ${message.guild.memberCount}`)]
-    });
-  }
+  if (cmd === "serverinfo")
+    return message.reply({ embeds:[e("🌐 Server", message.guild.name)] });
 
   if (cmd === "uptime")
-    return message.reply({ embeds:[embed("⏱ Uptime",`${Math.floor(client.uptime/1000)}s`)] });
-
-  if (cmd === "math") {
-    try {
-      return message.reply({ embeds:[embed("🧮 Math", eval(args.join(" ")).toString())] });
-    } catch {
-      return message.reply({ embeds:[embed("❌ Math","Error","Red")] });
-    }
-  }
+    return message.reply({ embeds:[e("⏱ Uptime",`${Math.floor(client.uptime/1000)}s`)] });
 
   // ======================
   // 🛠 MODERATION
@@ -398,38 +329,18 @@ client.on("messageCreate", async (message) => {
     if (t) t.timeout(60000);
   }
 
-  if (cmd === "warn") {
-    if (!isAdmin) return;
-    const t = message.mentions.users.first();
-    if (!t) return;
-
-    getUser(t.id).warnings++;
-    save();
-
-    return message.reply({ embeds:[embed("⚠️ Warn", t.username)] });
-  }
-
-  if (cmd === "warnings") {
-    const t = message.mentions.users.first() || message.author;
-    return message.reply({
-      embeds:[embed("⚠️ Warnings", `${getUser(t.id).warnings}`)]
-    });
-  }
-
   // ======================
   // 👮 ADMIN
   // ======================
   if (cmd === "admhelp") {
     if (!isAdmin) return;
-    return message.reply({
-      embeds:[embed("👮 Admin",`
+    return message.reply({ embeds:[e("👮 Admin",`
 .addorbits
 .resetorbits
 .resetbank
 .say
 .slowmode
-      `)]
-    });
+    `)] });
   }
 
   if (cmd === "addorbits") {
@@ -454,17 +365,6 @@ client.on("messageCreate", async (message) => {
       u.bankLimit = 5000;
       save();
     }
-  }
-
-  if (cmd === "say") {
-    if (!isAdmin) return;
-    message.channel.send(args.join(" "));
-  }
-
-  if (cmd === "slowmode") {
-    if (!isAdmin) return;
-    const seconds = parseInt(args[0]);
-    message.channel.setRateLimitPerUser(seconds);
   }
 
 });

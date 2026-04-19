@@ -89,6 +89,7 @@ client.on("messageCreate", async (message) => {
 🛒 shop, inventory  
 🎭 roleshop, buyrole  
 🏆 prestige  
+🏆 leaderboard  
 🎱 8ball  
 🧰 ping, avatar, userinfo, serverinfo, uptime  
 🛠 kick, ban, clear, timeout  
@@ -207,7 +208,37 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 🎭 ROLE SHOP (BELU STYLE)
+  // 🏆 LEADERBOARD (ADDED)
+  // ======================
+  if (cmd === "leaderboard") {
+    const sorted = Object.entries(data)
+      .sort((a, b) => (b[1].orbits + b[1].bank) - (a[1].orbits + a[1].bank))
+      .slice(0, 10);
+
+    let desc = "";
+
+    for (let i = 0; i < sorted.length; i++) {
+      const [id, u] = sorted[i];
+      const member = await message.guild.members.fetch(id).catch(() => null);
+
+      const name = member ? member.user.username : "Unknown";
+      const total = (u.orbits || 0) + (u.bank || 0);
+
+      desc += `**${i + 1}. ${name}** — ${total} 💜\n`;
+    }
+
+    return message.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor("Purple")
+          .setTitle("🏆 Orbit Leaderboard")
+          .setDescription(desc || "No data yet.")
+      ]
+    });
+  }
+
+  // ======================
+  // 🎭 ROLE SHOP
   // ======================
   if (cmd === "roleshop") {
     const embed = new EmbedBuilder()
@@ -285,7 +316,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ======================
-  // 🧰 UTILITY
+  // 🧰 UTILITY + MODERATION (UNCHANGED BELOW)
   // ======================
   if (cmd === "ping") return message.reply({ embeds:[e("🏓 Ping","Pong")] });
 
@@ -302,9 +333,6 @@ client.on("messageCreate", async (message) => {
   if (cmd === "uptime")
     return message.reply({ embeds:[e("⏱ Uptime",`${Math.floor(client.uptime/1000)}s`)] });
 
-  // ======================
-  // 🛠 MODERATION
-  // ======================
   if (cmd === "clear") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
     const amt = parseInt(args[0]);
@@ -329,9 +357,6 @@ client.on("messageCreate", async (message) => {
     if (t) t.timeout(60000);
   }
 
-  // ======================
-  // 👮 ADMIN
-  // ======================
   if (cmd === "admhelp") {
     if (!isAdmin) return;
     return message.reply({ embeds:[e("👮 Admin",`

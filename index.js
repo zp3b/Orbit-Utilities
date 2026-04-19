@@ -52,8 +52,8 @@ function getUser(id) {
 // 🎭 ROLE SHOP (EDIT IDS)
 // ======================
 const roleShop = {
-  vip: { price: 5000, roleId: "PUT_ROLE_ID", desc: "VIP access" },
-  elite: { price: 15000, roleId: "PUT_ROLE_ID", desc: "Elite status" }
+  vip: { price: 5000, roleId: "1495360156941422753", desc: "VIP access" },
+  elite: { price: 15000, roleId: "1495360406921805976", desc: "Elite status" }
 };
 
 // ======================

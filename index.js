@@ -60,11 +60,28 @@ const shop = {
 // ======================
 // 🎭 ROLE SHOP
 // ======================
-const roleShop = {
-  vip: { price: 5000, roleId: "ROLE_ID_HERE", desc: "✨ VIP access" },
-  elite: { price: 15000, roleId: "ROLE_ID_HERE", desc: "🔥 Elite status" }
-};
+if (cmd === "roleshop") {
+  const embed = new EmbedBuilder()
+    .setColor("Purple")
+    .setTitle("💜 Orbit Role Shop")
+    .setDescription("Exchange Orbits for exclusive server roles!\n");
 
+  let i = 1;
+
+  for (let r in roleShop) {
+    embed.addFields({
+      name: `${i}: ${r.toUpperCase()}`,
+      value: `Price: **${roleShop[r].price} 💜**\n${roleShop[r].desc || "Exclusive role"}`
+    });
+    i++;
+  }
+
+  embed.setFooter({
+    text: `Purchases are non-refundable | Your balance: ${user.orbits} 💜`
+  });
+
+  return message.reply({ embeds: [embed] });
+}
 // ======================
 client.once("ready", () => {
   console.log("💜 Orbit V8+ EMBED ONLINE");

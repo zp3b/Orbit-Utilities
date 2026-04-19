@@ -1,4 +1,16 @@
 {
-  "badWords": ["fuck", "shit", "bitch", "asshole"],
+  "badWords": [
+    "fuck", "fucking", "fucker", "fucks", "fux", "fck", "phuck", "f*ck", "f.u.c.k",
+    "shit", "shitting", "shitty", "shits", "shiz", "sh1t", "s.h.i.t", "sh*t",
+    "bitch", "bitches", "bitching", "biatch", "b!tch", "bitchy",
+    "asshole", "assholes", "ass", "arse", "buttface", "booty", "a$$", "a$$hole",
+    "dick", "dicks", "dildo", "penis", "pussy", "vagina", "clit", "c0ck", "cock",
+    "bastard", "crap", "damn", "hell", "dih", "douche", "dyke",
+    "cunt", "twat", "wanker", "prick", "boner", "ejaculate",
+    "slut", "whore", "hooker", "skank", "thot", "hoe",
+    "dumbass", "jackass", "retard", "idiot", "moron", "numbnut",
+    "motherfucker", "mofo", "milf", "tit", "tits", "titties", "boob", "boobs",
+    "knob", "bollocks", "tosser", "scrotum", "testicle", "orgasm", "cum", "jizz"
+  ],
   "allowLinksForAdminsOnly": true
 }

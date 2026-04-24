@@ -61,7 +61,7 @@ const roleShop = {
 const embed = (t, d) =>
   new EmbedBuilder()
     .setColor(COLOR)
-    .setTitle(`blur • ${t}`)
+    .setTitle(`✦ ${t}`)
     .setDescription(d)
     .setFooter({ text: "blur 💜" });
 

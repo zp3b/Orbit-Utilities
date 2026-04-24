@@ -19,6 +19,21 @@ const client = new Client({
 const prefix = ".";
 const COLOR = "#2b2d31";
 
+const { REST, Routes, SlashCommandBuilder } = require("discord.js");
+
+const slashCommands = [
+  new SlashCommandBuilder().setName("balance").setDescription("check balance"),
+  new SlashCommandBuilder().setName("daily").setDescription("daily reward"),
+  new SlashCommandBuilder().setName("work").setDescription("work"),
+  new SlashCommandBuilder().setName("spin").setDescription("spin"),
+  new SlashCommandBuilder().setName("level").setDescription("level"),
+  new SlashCommandBuilder().setName("leaderboard").setDescription("top"),
+  new SlashCommandBuilder()
+    .setName("8ball")
+    .setDescription("ask something")
+    .addStringOption(o => o.setName("question").setRequired(true))
+];
+
 // ======================
 // 💾 DATABASE
 // ======================
@@ -64,8 +79,21 @@ const embed = (t, d) =>
     .setTitle(t)
     .setDescription(d)
 
-client.once("ready", () => {
+client.once("ready", async () => {
   console.log("blur online 💜");
+
+  const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+
+  try {
+    await rest.put(
+      Routes.applicationCommands("1494829583084556288"),
+      { body: slashCommands }
+    );
+
+    console.log("slash commands loaded 😈");
+  } catch (err) {
+    console.error(err);
+  }
 });
 
 // ======================
@@ -309,6 +337,58 @@ a: **${res}**
     });
   }
 
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const user = getUser(interaction.user.id);
+
+  if (interaction.commandName === "balance") {
+    return interaction.reply({
+      embeds: [embed("balance", `
+wallet: **${user.orbits}**
+bank: **${user.bank}/${user.bankLimit}**
+      `)]
+    });
+  }
+
+  if (interaction.commandName === "daily") {
+    const reward = Math.floor(Math.random()*200)+150;
+    user.orbits += reward;
+    save();
+    return interaction.reply(`+${reward}`);
+  }
+
+  if (interaction.commandName === "work") {
+    const earn = Math.floor(Math.random()*150)+50;
+    user.orbits += earn;
+    save();
+    return interaction.reply(`+${earn}`);
+  }
+
+  if (interaction.commandName === "spin") {
+    const reward = Math.floor(Math.random()*400);
+    user.orbits += reward;
+    save();
+    return interaction.reply(`+${reward}`);
+  }
+
+  if (interaction.commandName === "level") {
+    return interaction.reply(`level: ${user.level}`);
+  }
+
+  if (interaction.commandName === "leaderboard") {
+    return interaction.reply("use .leaderboard for now");
+  }
+
+  if (interaction.commandName === "8ball") {
+    const q = interaction.options.getString("question");
+    const responses = ["yes","no","maybe","unlikely"];
+    const res = responses[Math.floor(Math.random()*responses.length)];
+
+    return interaction.reply(`q: ${q}\na: ${res}`);
+  }
 });
 
 client.login(process.env.TOKEN);

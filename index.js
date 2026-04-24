@@ -17,7 +17,7 @@ const client = new Client({
 });
 
 const prefix = ".";
-const THEME_COLOR = "#2b2d31";
+const COLOR = "#2b2d31";
 
 // ======================
 // 💾 DATABASE
@@ -34,14 +34,12 @@ function save() {
 function getUser(id) {
   if (!data[id]) {
     data[id] = {
-      orbits: 0,
+      orbits: 250,
       bank: 0,
-      bankLimit: 7500,
-      inventory: [],
-      warnings: 0,
-      prestige: 0,
+      bankLimit: 5000,
       xp: 0,
       level: 1,
+      prestige: 0,
       lastDaily: 0,
       lastWork: 0,
       lastSpin: 0,
@@ -55,21 +53,20 @@ function getUser(id) {
 // 🎭 ROLE SHOP
 // ======================
 const roleShop = {
-  vip: { price: 5000, roleId: "PUT_ROLE_ID", desc: "vip access" },
-  elite: { price: 15000, roleId: "PUT_ROLE_ID", desc: "elite status" }
+  vip: { price: 5000, roleId: "PUT_ROLE_ID", desc: "✨ vip access" },
+  elite: { price: 15000, roleId: "PUT_ROLE_ID", desc: "🔥 elite status" }
 };
 
 // ======================
-function blurEmbed(title, desc) {
-  return new EmbedBuilder()
-    .setColor(THEME_COLOR)
-    .setTitle(`blur • ${title}`)
-    .setDescription(desc)
-    .setFooter({ text: "blur" });
-}
+const embed = (t, d) =>
+  new EmbedBuilder()
+    .setColor(COLOR)
+    .setTitle(`blur • ${t}`)
+    .setDescription(d)
+    .setFooter({ text: "blur 💜" });
 
 client.once("ready", () => {
-  console.log("blur online");
+  console.log("blur online 💜");
 });
 
 // ======================
@@ -79,7 +76,7 @@ client.on("messageCreate", async (message) => {
   const user = getUser(message.author.id);
 
   // ======================
-  // 💜 XP SYSTEM
+  // 📈 XP SYSTEM
   // ======================
   const xpGain = Math.floor(Math.random()*15)+5;
   user.xp += xpGain;
@@ -92,8 +89,8 @@ client.on("messageCreate", async (message) => {
     user.orbits += 200;
 
     message.channel.send({
-      embeds: [blurEmbed("level up",
-        `${message.author} reached level **${user.level}**\n+200 orbits`
+      embeds: [embed("level up 🎉",
+        `${message.author} reached **level ${user.level}**\n+200 💜`
       )]
     });
   }
@@ -112,14 +109,15 @@ client.on("messageCreate", async (message) => {
   // ======================
   if (cmd === "help") {
     return message.reply({
-      embeds: [blurEmbed("help", `
-balance • daily • work • pay  
-bankbalance • deposit • withdraw  
-spin • rob  
-roleshop • buyrole  
-level • leaderboard  
-prestige  
-8ball  
+      embeds: [embed("help 📜", `
+💰 balance • daily • work • pay  
+🏦 bankbalance • deposit • withdraw  
+🎰 spin • rob  
+🎭 roleshop • buyrole  
+📈 level • leaderboard  
+🏆 prestige  
+🎱 8ball  
+👮 admhelp
       `)]
     });
   }
@@ -129,61 +127,61 @@ prestige
   // ======================
   if (cmd === "balance") {
     return message.reply({
-      embeds: [blurEmbed("balance", `
-wallet: **${user.orbits}**  
-bank: **${user.bank}/${user.bankLimit}**  
-prestige: **${user.prestige}**
+      embeds: [embed("balance 💜", `
+💰 wallet: **${user.orbits}**  
+🏦 bank: **${user.bank}/${user.bankLimit}**  
+🏆 prestige: **${user.prestige}**
       `)]
     });
   }
 
   if (cmd === "daily") {
     if (Date.now() - user.lastDaily < 86400000)
-      return message.reply({ embeds:[blurEmbed("daily","already claimed")] });
+      return message.reply({ embeds:[embed("daily ⏳","already claimed")] });
 
     const reward = Math.floor(Math.random()*200)+150;
     user.orbits += reward;
     user.lastDaily = Date.now();
     save();
 
-    return message.reply({ embeds:[blurEmbed("daily",`+${reward}`)] });
+    return message.reply({ embeds:[embed("daily 💜",`+${reward}`)] });
   }
 
   if (cmd === "work") {
     if (Date.now() - user.lastWork < 60000)
-      return message.reply({ embeds:[blurEmbed("work","wait 1 min")] });
+      return message.reply({ embeds:[embed("work ⏳","wait 1 min")] });
 
     const earn = Math.floor(Math.random()*150)+50;
     user.orbits += earn;
     user.lastWork = Date.now();
     save();
 
-    return message.reply({ embeds:[blurEmbed("work",`+${earn}`)] });
+    return message.reply({ embeds:[embed("work 💼",`+${earn}`)] });
   }
 
   if (cmd === "spin") {
     if (Date.now() - user.lastSpin < 300000)
-      return message.reply({ embeds:[blurEmbed("spin","cooldown")] });
+      return message.reply({ embeds:[embed("spin ⏳","5 min cooldown")] });
 
     const reward = Math.floor(Math.random()*400);
     user.orbits += reward;
     user.lastSpin = Date.now();
     save();
 
-    return message.reply({ embeds:[blurEmbed("spin",`+${reward}`)] });
+    return message.reply({ embeds:[embed("spin 🎰",`+${reward}`)] });
   }
 
   if (cmd === "rob") {
     const t = message.mentions.users.first();
     if (!t || t.bot || t.id === message.author.id)
-      return message.reply({ embeds:[blurEmbed("rob","invalid")] });
+      return message.reply({ embeds:[embed("rob ❌","invalid target")] });
 
     const target = getUser(t.id);
     if (target.orbits <= 0)
-      return message.reply({ embeds:[blurEmbed("rob","no money")] });
+      return message.reply({ embeds:[embed("rob 💀","target broke")] });
 
     if (Date.now() - user.lastRob < 1800000)
-      return message.reply({ embeds:[blurEmbed("rob","cooldown")] });
+      return message.reply({ embeds:[embed("rob ⏳","30 min cooldown")] });
 
     const steal = Math.floor(Math.random()*Math.min(200,target.orbits));
     user.orbits += steal;
@@ -191,37 +189,40 @@ prestige: **${user.prestige}**
     user.lastRob = Date.now();
     save();
 
-    return message.reply({ embeds:[blurEmbed("rob",`stole ${steal}`)] });
+    return message.reply({ embeds:[embed("rob 💀",`stole ${steal}`)] });
   }
 
   // ======================
   // 🏦 BANK
   // ======================
   if (cmd === "bankbalance")
-    return message.reply({ embeds:[blurEmbed("bank",`${user.bank}/${user.bankLimit}`)] });
+    return message.reply({ embeds:[embed("bank 🏦",`${user.bank}/${user.bankLimit}`)] });
 
   if (cmd === "deposit") {
     const amt = parseInt(args[0]);
-    if (!amt || user.orbits < amt) return;
+    if (!amt || user.orbits < amt)
+      return message.reply({ embeds:[embed("deposit ❌","invalid")] });
 
-    if (user.bank + amt > user.bankLimit) return;
+    if (user.bank + amt > user.bankLimit)
+      return message.reply({ embeds:[embed("deposit 🏦","bank full")] });
 
     user.orbits -= amt;
     user.bank += amt;
     save();
 
-    return message.reply({ embeds:[blurEmbed("deposit",`+${amt}`)] });
+    return message.reply({ embeds:[embed("deposit 🏦",`+${amt}`)] });
   }
 
   if (cmd === "withdraw") {
     const amt = parseInt(args[0]);
-    if (!amt || user.bank < amt) return;
+    if (!amt || user.bank < amt)
+      return message.reply({ embeds:[embed("withdraw ❌","invalid")] });
 
     user.bank -= amt;
     user.orbits += amt;
     save();
 
-    return message.reply({ embeds:[blurEmbed("withdraw",`${amt}`)] });
+    return message.reply({ embeds:[embed("withdraw 🏦",`${amt}`)] });
   }
 
   // ======================
@@ -229,28 +230,29 @@ prestige: **${user.prestige}**
   // ======================
   if (cmd === "roleshop") {
     let i = 1;
-    const embed = new EmbedBuilder()
-      .setColor(THEME_COLOR)
-      .setTitle("blur • roles");
+    const e = new EmbedBuilder()
+      .setColor(COLOR)
+      .setTitle("blur • roles 🎭");
 
     for (let r in roleShop) {
-      embed.addFields({
+      e.addFields({
         name: `${i}. ${r}`,
-        value: `price: ${roleShop[r].price}\n${roleShop[r].desc}`
+        value: `💜 ${roleShop[r].price}\n${roleShop[r].desc}`
       });
       i++;
     }
 
-    embed.setFooter({ text: `balance: ${user.orbits}` });
+    e.setFooter({ text: `balance: ${user.orbits}` });
 
-    return message.reply({ embeds:[embed] });
+    return message.reply({ embeds:[e] });
   }
 
   if (cmd === "buyrole") {
     const item = roleShop[args[0]];
     if (!item) return;
 
-    if (user.orbits < item.price) return;
+    if (user.orbits < item.price)
+      return message.reply({ embeds:[embed("role ❌","not enough")] });
 
     const role = message.guild.roles.cache.get(item.roleId);
     if (!role) return;
@@ -260,7 +262,7 @@ prestige: **${user.prestige}**
     user.orbits -= item.price;
     save();
 
-    return message.reply({ embeds:[blurEmbed("role", role.name)] });
+    return message.reply({ embeds:[embed("role 🎭", role.name)] });
   }
 
   // ======================
@@ -268,9 +270,9 @@ prestige: **${user.prestige}**
   // ======================
   if (cmd === "level") {
     return message.reply({
-      embeds:[blurEmbed("level", `
-level: ${user.level}  
-xp: ${user.xp}/${user.level*100}
+      embeds:[embed("level 📈", `
+level: **${user.level}**  
+xp: **${user.xp}/${user.level*100}**
       `)]
     });
   }
@@ -289,7 +291,7 @@ xp: ${user.xp}/${user.level*100}
     }
 
     return message.reply({
-      embeds:[blurEmbed("leaderboard", desc || "empty")]
+      embeds:[embed("leaderboard 🏆", desc || "empty")]
     });
   }
 
@@ -301,7 +303,7 @@ xp: ${user.xp}/${user.level*100}
     const res = responses[Math.floor(Math.random()*responses.length)];
 
     return message.reply({
-      embeds:[blurEmbed("8ball", `
+      embeds:[embed("8ball 🎱", `
 q: ${args.join(" ") || "none"}  
 a: **${res}**
       `)]

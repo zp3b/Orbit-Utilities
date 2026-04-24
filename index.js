@@ -1,8 +1,12 @@
-const { 
-  Client, 
-  GatewayIntentBits, 
-  PermissionsBitField,
-  EmbedBuilder 
+const {
+  Client,
+  GatewayIntentBits,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  StringSelectMenuBuilder,
+  PermissionsBitField
 } = require("discord.js");
 
 const fs = require("fs");
@@ -20,11 +24,11 @@ const prefix = ".";
 const COLOR = "#2b2d31";
 
 // ======================
-// 💾 DATABASE
+// 💾 DATA
 // ======================
 let data = {};
 if (fs.existsSync("./data.json")) {
-  try { data = JSON.parse(fs.readFileSync("./data.json")); } catch {}
+  data = JSON.parse(fs.readFileSync("./data.json"));
 }
 
 function save() {
@@ -38,60 +42,47 @@ function getUser(id) {
       bank: 0,
       bankLimit: 5000,
       xp: 0,
-      level: 1,
-      prestige: 0,
-      lastDaily: 0,
-      lastWork: 0,
-      lastSpin: 0,
-      lastRob: 0
+      level: 1
     };
   }
   return data[id];
 }
 
 // ======================
-// 🎭 ROLE SHOP
+// 🎭 ROLE SHOP CONFIG
 // ======================
-const roleShop = {
-  vip: { price: 5000, roleId: "PUT_ROLE_ID", desc: "✨ vip access" },
-  elite: { price: 15000, roleId: "PUT_ROLE_ID", desc: "🔥 elite status" }
-};
+const roleShop = [
+  { name: "VIP", price: 5000, roleId: "PUT_ROLE_ID" },
+  { name: "ELITE", price: 15000, roleId: "PUT_ROLE_ID" }
+];
 
 // ======================
 const embed = (t, d) =>
-  new EmbedBuilder()
-    .setColor(COLOR)
-    .setTitle(`✦ ${t}`)
-    .setDescription(d)
-    .setFooter({ text: "blur 💜" });
+  new EmbedBuilder().setColor(COLOR).setTitle(t).setDescription(d);
 
 client.once("ready", () => {
-  console.log("blur online 💜");
+  console.log("online");
 });
 
+// ======================
+// 💬 MESSAGE COMMANDS
 // ======================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
   const user = getUser(message.author.id);
 
-  // ======================
-  // 📈 XP SYSTEM
-  // ======================
-  const xpGain = Math.floor(Math.random()*15)+5;
-  user.xp += xpGain;
+  // XP SYSTEM
+  const xp = Math.floor(Math.random() * 10) + 5;
+  user.xp += xp;
 
-  const needed = user.level * 100;
-
-  if (user.xp >= needed) {
-    user.xp -= needed;
+  if (user.xp >= user.level * 100) {
+    user.xp = 0;
     user.level++;
     user.orbits += 200;
 
     message.channel.send({
-      embeds: [embed("level up 🎉",
-        `${message.author} reached **level ${user.level}**\n+200 💜`
-      )]
+      embeds: [embed("level up", `level ${user.level}\n+200`)]
     });
   }
 
@@ -102,214 +93,137 @@ client.on("messageCreate", async (message) => {
   const args = message.content.slice(prefix.length).split(/ +/);
   const cmd = args.shift().toLowerCase();
 
-  const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
-
   // ======================
-  // 💜 HELP
+  // 💜 HELP (BUTTON UI)
   // ======================
   if (cmd === "help") {
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("eco")
+        .setLabel("economy")
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId("fun")
+        .setLabel("fun")
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId("admin")
+        .setLabel("admin")
+        .setStyle(ButtonStyle.Secondary)
+    );
+
     return message.reply({
-      embeds: [embed("help 📜", `
-💰 balance • daily • work • pay  
-🏦 bankbalance • deposit • withdraw  
-🎰 spin • rob  
-🎭 roleshop • buyrole  
-📈 level • leaderboard  
-🏆 prestige  
-🎱 8ball  
-👮 admhelp
-      `)]
+      embeds: [embed("help", "choose a category")],
+      components: [row]
     });
   }
 
   // ======================
-  // 💰 ECONOMY
+  // 💰 BALANCE (BUTTON REFRESH)
   // ======================
   if (cmd === "balance") {
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("refresh_bal")
+        .setLabel("refresh")
+        .setStyle(ButtonStyle.Secondary)
+    );
+
     return message.reply({
-      embeds: [embed("balance 💜", `
-💰 wallet: **${user.orbits}**  
-🏦 bank: **${user.bank}/${user.bankLimit}**  
-🏆 prestige: **${user.prestige}**
-      `)]
+      embeds: [
+        embed(
+          "balance",
+          `wallet: ${user.orbits}\nbank: ${user.bank}`
+        )
+      ],
+      components: [row]
     });
   }
 
-  if (cmd === "daily") {
-    if (Date.now() - user.lastDaily < 86400000)
-      return message.reply({ embeds:[embed("daily ⏳","already claimed")] });
-
-    const reward = Math.floor(Math.random()*200)+150;
-    user.orbits += reward;
-    user.lastDaily = Date.now();
-    save();
-
-    return message.reply({ embeds:[embed("daily 💜",`+${reward}`)] });
-  }
-
-  if (cmd === "work") {
-    if (Date.now() - user.lastWork < 60000)
-      return message.reply({ embeds:[embed("work ⏳","wait 1 min")] });
-
-    const earn = Math.floor(Math.random()*150)+50;
-    user.orbits += earn;
-    user.lastWork = Date.now();
-    save();
-
-    return message.reply({ embeds:[embed("work 💼",`+${earn}`)] });
-  }
-
-  if (cmd === "spin") {
-    if (Date.now() - user.lastSpin < 300000)
-      return message.reply({ embeds:[embed("spin ⏳","5 min cooldown")] });
-
-    const reward = Math.floor(Math.random()*400);
-    user.orbits += reward;
-    user.lastSpin = Date.now();
-    save();
-
-    return message.reply({ embeds:[embed("spin 🎰",`+${reward}`)] });
-  }
-
-  if (cmd === "rob") {
-    const t = message.mentions.users.first();
-    if (!t || t.bot || t.id === message.author.id)
-      return message.reply({ embeds:[embed("rob ❌","invalid target")] });
-
-    const target = getUser(t.id);
-    if (target.orbits <= 0)
-      return message.reply({ embeds:[embed("rob 💀","target broke")] });
-
-    if (Date.now() - user.lastRob < 1800000)
-      return message.reply({ embeds:[embed("rob ⏳","30 min cooldown")] });
-
-    const steal = Math.floor(Math.random()*Math.min(200,target.orbits));
-    user.orbits += steal;
-    target.orbits -= steal;
-    user.lastRob = Date.now();
-    save();
-
-    return message.reply({ embeds:[embed("rob 💀",`stole ${steal}`)] });
-  }
-
   // ======================
-  // 🏦 BANK
-  // ======================
-  if (cmd === "bankbalance")
-    return message.reply({ embeds:[embed("bank 🏦",`${user.bank}/${user.bankLimit}`)] });
-
-  if (cmd === "deposit") {
-    const amt = parseInt(args[0]);
-    if (!amt || user.orbits < amt)
-      return message.reply({ embeds:[embed("deposit ❌","invalid")] });
-
-    if (user.bank + amt > user.bankLimit)
-      return message.reply({ embeds:[embed("deposit 🏦","bank full")] });
-
-    user.orbits -= amt;
-    user.bank += amt;
-    save();
-
-    return message.reply({ embeds:[embed("deposit 🏦",`+${amt}`)] });
-  }
-
-  if (cmd === "withdraw") {
-    const amt = parseInt(args[0]);
-    if (!amt || user.bank < amt)
-      return message.reply({ embeds:[embed("withdraw ❌","invalid")] });
-
-    user.bank -= amt;
-    user.orbits += amt;
-    save();
-
-    return message.reply({ embeds:[embed("withdraw 🏦",`${amt}`)] });
-  }
-
-  // ======================
-  // 🎭 ROLE SHOP
+  // 🎭 ROLE SHOP (DROPDOWN)
   // ======================
   if (cmd === "roleshop") {
-    let i = 1;
-    const e = new EmbedBuilder()
-      .setColor(COLOR)
-      .setTitle("blur • roles 🎭");
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId("buy_role")
+      .setPlaceholder("select a role");
 
-    for (let r in roleShop) {
-      e.addFields({
-        name: `${i}. ${r}`,
-        value: `💜 ${roleShop[r].price}\n${roleShop[r].desc}`
+    roleShop.forEach((r, i) => {
+      menu.addOptions({
+        label: r.name,
+        value: i.toString(),
+        description: `${r.price} orbits`
       });
-      i++;
-    }
+    });
 
-    e.setFooter({ text: `balance: ${user.orbits}` });
+    const row = new ActionRowBuilder().addComponents(menu);
 
-    return message.reply({ embeds:[e] });
+    return message.reply({
+      embeds: [embed("roles", "choose a role to buy")],
+      components: [row]
+    });
+  }
+});
+
+// ======================
+// ⚡ BUTTON / MENU HANDLER
+// ======================
+client.on("interactionCreate", async (i) => {
+  if (!i.isButton() && !i.isStringSelectMenu()) return;
+
+  const user = getUser(i.user.id);
+
+  // HELP BUTTONS
+  if (i.customId === "eco") {
+    return i.reply({
+      embeds: [embed("economy", "balance, daily, work, deposit")]
+    });
   }
 
-  if (cmd === "buyrole") {
-    const item = roleShop[args[0]];
-    if (!item) return;
+  if (i.customId === "fun") {
+    return i.reply({
+      embeds: [embed("fun", "8ball, spin")]
+    });
+  }
+
+  if (i.customId === "admin") {
+    return i.reply({
+      embeds: [embed("admin", "mute, kick, etc")]
+    });
+  }
+
+  // REFRESH BALANCE
+  if (i.customId === "refresh_bal") {
+    return i.update({
+      embeds: [
+        embed(
+          "balance",
+          `wallet: ${user.orbits}\nbank: ${user.bank}`
+        )
+      ]
+    });
+  }
+
+  // ROLE BUY
+  if (i.customId === "buy_role") {
+    const item = roleShop[parseInt(i.values[0])];
 
     if (user.orbits < item.price)
-      return message.reply({ embeds:[embed("role ❌","not enough")] });
+      return i.reply({ content: "not enough", ephemeral: true });
 
-    const role = message.guild.roles.cache.get(item.roleId);
+    const role = i.guild.roles.cache.get(item.roleId);
     if (!role) return;
 
-    await message.member.roles.add(role);
+    await i.member.roles.add(role);
 
     user.orbits -= item.price;
     save();
 
-    return message.reply({ embeds:[embed("role 🎭", role.name)] });
-  }
-
-  // ======================
-  // 📈 LEVEL
-  // ======================
-  if (cmd === "level") {
-    return message.reply({
-      embeds:[embed("level 📈", `
-level: **${user.level}**  
-xp: **${user.xp}/${user.level*100}**
-      `)]
+    return i.reply({
+      content: `bought ${item.name}`,
+      ephemeral: true
     });
   }
-
-  if (cmd === "leaderboard") {
-    const sorted = Object.entries(data)
-      .sort((a,b)=> (b[1].level||0)-(a[1].level||0))
-      .slice(0,10);
-
-    let desc = "";
-    let i = 1;
-
-    for (let [id,u] of sorted) {
-      desc += `${i}. <@${id}> — lvl ${u.level}\n`;
-      i++;
-    }
-
-    return message.reply({
-      embeds:[embed("leaderboard 🏆", desc || "empty")]
-    });
-  }
-
-  // ======================
-  // 🎱 8BALL
-  // ======================
-  if (cmd === "8ball") {
-    const responses = ["yes","no","maybe","unlikely","definitely"];
-    const res = responses[Math.floor(Math.random()*responses.length)];
-
-    return message.reply({
-      embeds:[embed("8ball 🎱", `
-q: ${args.join(" ") || "none"}  
-a: **${res}**
-      `)]
-    });
-  }
-
 });
 
 client.login(process.env.TOKEN);

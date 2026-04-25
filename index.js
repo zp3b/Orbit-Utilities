@@ -167,7 +167,8 @@ economy.run(client, message, [cmd, ...args], embed, data, save, getUser);
   if (cmd === "help") {
     return message.reply({
       embeds: [embed("help 📜", `
-💰 balance • daily • work • pay • shop • inventory • buy • use • sell
+💰 balance • daily • work • pay
+🛒 buy • use • sell • shop • inventory
 🔥 streak
 📈 upgradebank • profile
 🏦 bankbalance • deposit • withdraw  

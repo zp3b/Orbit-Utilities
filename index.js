@@ -89,17 +89,6 @@ const slashCommands = [
   new SlashCommandBuilder().setName("level").setDescription("level"),
   new SlashCommandBuilder().setName("leaderboard").setDescription("top"),
   new SlashCommandBuilder().setName("inventory").setDescription("view inventory"),
-new SlashCommandBuilder().setName("shop").setDescription("view shop"),
-new SlashCommandBuilder()
-  .setName("buy")
-  .setDescription("buy item")
-  .addStringOption(o=>o.setName("item").setDescription("item").setRequired(true))
-  .addIntegerOption(o=>o.setName("amount").setDescription("amount")),
-new SlashCommandBuilder()
-  .setName("use")
-  .setDescription("use item")
-  .addStringOption(o=>o.setName("item").setRequired(true)),
-new SlashCommandBuilder().setName("profile").setDescription("profile")
   new SlashCommandBuilder()
     .setName("8ball")
     .setDescription("ask something")

@@ -84,88 +84,184 @@ const economy = require("./commands/economy/economy.js");
 const slashCommands = [
 
   // 💰 ECONOMY
-  new SlashCommandBuilder().setName("balance").setDescription("check balance"),
-  new SlashCommandBuilder().setName("daily").setDescription("daily reward"),
-  new SlashCommandBuilder().setName("work").setDescription("work"),
-  new SlashCommandBuilder().setName("spin").setDescription("spin"),
+  new SlashCommandBuilder()
+    .setName("balance")
+    .setDescription("check your balance"),
+
+  new SlashCommandBuilder()
+    .setName("daily")
+    .setDescription("claim daily reward"),
+
+  new SlashCommandBuilder()
+    .setName("work")
+    .setDescription("work for money"),
+
+  new SlashCommandBuilder()
+    .setName("spin")
+    .setDescription("spin for rewards"),
+
   new SlashCommandBuilder()
     .setName("rob")
-    .setDescription("rob someone")
-    .addUserOption(o=>o.setName("target").setRequired(true)),
+    .setDescription("rob another user")
+    .addUserOption(o =>
+      o.setName("target")
+       .setDescription("user to rob")
+       .setRequired(true)
+    ),
 
   new SlashCommandBuilder()
     .setName("deposit")
     .setDescription("deposit money")
-    .addIntegerOption(o=>o.setName("amount").setRequired(true)),
+    .addIntegerOption(o =>
+      o.setName("amount")
+       .setDescription("amount to deposit")
+       .setRequired(true)
+    ),
 
   new SlashCommandBuilder()
     .setName("withdraw")
     .setDescription("withdraw money")
-    .addIntegerOption(o=>o.setName("amount").setRequired(true)),
+    .addIntegerOption(o =>
+      o.setName("amount")
+       .setDescription("amount to withdraw")
+       .setRequired(true)
+    ),
 
   // 🧰 ITEMS
-  new SlashCommandBuilder().setName("inventory").setDescription("view inventory"),
-  new SlashCommandBuilder().setName("shop").setDescription("view shop"),
+  new SlashCommandBuilder()
+    .setName("inventory")
+    .setDescription("view your inventory"),
+
+  new SlashCommandBuilder()
+    .setName("shop")
+    .setDescription("view shop"),
+
   new SlashCommandBuilder()
     .setName("buy")
-    .setDescription("buy item")
-    .addStringOption(o=>o.setName("item").setRequired(true))
-    .addIntegerOption(o=>o.setName("amount")),
+    .setDescription("buy an item")
+    .addStringOption(o =>
+      o.setName("item")
+       .setDescription("item name")
+       .setRequired(true)
+    )
+    .addIntegerOption(o =>
+      o.setName("amount")
+       .setDescription("amount to buy")
+    ),
 
   new SlashCommandBuilder()
     .setName("use")
-    .setDescription("use item")
-    .addStringOption(o=>o.setName("item").setRequired(true)),
+    .setDescription("use an item")
+    .addStringOption(o =>
+      o.setName("item")
+       .setDescription("item name")
+       .setRequired(true)
+    ),
 
   new SlashCommandBuilder()
     .setName("sell")
-    .setDescription("sell item")
-    .addStringOption(o=>o.setName("item").setRequired(true))
-    .addIntegerOption(o=>o.setName("amount")),
+    .setDescription("sell an item")
+    .addStringOption(o =>
+      o.setName("item")
+       .setDescription("item name")
+       .setRequired(true)
+    )
+    .addIntegerOption(o =>
+      o.setName("amount")
+       .setDescription("amount to sell")
+    ),
 
   // 📈 PROGRESS
-  new SlashCommandBuilder().setName("level").setDescription("level"),
-  new SlashCommandBuilder().setName("leaderboard").setDescription("top"),
-  new SlashCommandBuilder().setName("profile").setDescription("profile"),
-  new SlashCommandBuilder().setName("streak").setDescription("streak"),
-
-  // 🛠️ UTILITY
-  new SlashCommandBuilder().setName("userinfo").setDescription("user info"),
-  new SlashCommandBuilder().setName("serverinfo").setDescription("server info"),
   new SlashCommandBuilder()
-    .setName("avatar")
-    .setDescription("avatar")
-    .addUserOption(o=>o.setName("user")),
+    .setName("level")
+    .setDescription("check your level"),
 
   new SlashCommandBuilder()
-    .setName("poll")
-    .setDescription("create poll")
-    .addStringOption(o=>o.setName("question").setRequired(true)),
+    .setName("leaderboard")
+    .setDescription("view leaderboard"),
 
   new SlashCommandBuilder()
-    .setName("remind")
-    .setDescription("set reminder")
-    .addIntegerOption(o=>o.setName("time").setRequired(true))
-    .addStringOption(o=>o.setName("text").setRequired(true)),
+    .setName("profile")
+    .setDescription("view your profile"),
 
   new SlashCommandBuilder()
-    .setName("afk")
-    .setDescription("set afk")
-    .addStringOption(o=>o.setName("reason")),
-
-  new SlashCommandBuilder().setName("botinfo").setDescription("bot info"),
-  new SlashCommandBuilder().setName("invite").setDescription("invite bot"),
-
-  new SlashCommandBuilder()
-    .setName("calc")
-    .setDescription("calculate")
-    .addStringOption(o=>o.setName("expression").setRequired(true)),
+    .setName("streak")
+    .setDescription("view your streak"),
 
   // 🎱 FUN
   new SlashCommandBuilder()
     .setName("8ball")
-    .setDescription("ask something")
-    .addStringOption(o=>o.setName("question").setRequired(true))
+    .setDescription("ask the magic 8ball")
+    .addStringOption(o =>
+      o.setName("question")
+       .setDescription("your question")
+       .setRequired(true)
+    ),
+
+  // 🛠️ UTILITY
+  new SlashCommandBuilder()
+    .setName("avatar")
+    .setDescription("get avatar")
+    .addUserOption(o =>
+      o.setName("user")
+       .setDescription("user to check")
+    ),
+
+  new SlashCommandBuilder()
+    .setName("userinfo")
+    .setDescription("get user info"),
+
+  new SlashCommandBuilder()
+    .setName("serverinfo")
+    .setDescription("get server info"),
+
+  new SlashCommandBuilder()
+    .setName("botinfo")
+    .setDescription("bot info"),
+
+  new SlashCommandBuilder()
+    .setName("invite")
+    .setDescription("get bot invite"),
+
+  new SlashCommandBuilder()
+    .setName("calc")
+    .setDescription("calculate something")
+    .addStringOption(o =>
+      o.setName("expression")
+       .setDescription("math expression")
+       .setRequired(true)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("poll")
+    .setDescription("create a poll")
+    .addStringOption(o =>
+      o.setName("question")
+       .setDescription("poll question")
+       .setRequired(true)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("afk")
+    .setDescription("set afk")
+    .addStringOption(o =>
+      o.setName("reason")
+       .setDescription("afk reason")
+    ),
+
+  new SlashCommandBuilder()
+    .setName("remind")
+    .setDescription("set reminder")
+    .addIntegerOption(o =>
+      o.setName("time")
+       .setDescription("time in seconds")
+       .setRequired(true)
+    )
+    .addStringOption(o =>
+      o.setName("text")
+       .setDescription("reminder text")
+       .setRequired(true)
+    )
 ];
 
 client.once("clientReady", async () => {

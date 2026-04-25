@@ -134,11 +134,13 @@ client.on("messageCreate", async (message) => {
   const args = message.content.slice(prefix.length).split(/ +/);
   const cmd = args.shift().toLowerCase();
   const mod = require("./commands/moderation/mod.js");
+  const util = require("./commands/utility/util.js");
 configCmd.run(client, message, [cmd, ...args], embed, data, save);
 
 mod.run(client, message, [cmd, ...args], embed, data, save);
+util.run(client, message, [cmd, ...args], embed, data, save);
 
-  const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
+  const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.Administrator);
 
   // ======================
   // 💜 HELP

@@ -84,7 +84,7 @@ const embed = (t, d) =>
     .setTitle(t)
     .setDescription(d)
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log("blur online 💜");
 
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);

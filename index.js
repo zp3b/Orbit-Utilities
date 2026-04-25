@@ -28,10 +28,15 @@ const slashCommands = [
   new SlashCommandBuilder().setName("spin").setDescription("spin"),
   new SlashCommandBuilder().setName("level").setDescription("level"),
   new SlashCommandBuilder().setName("leaderboard").setDescription("top"),
+
   new SlashCommandBuilder()
     .setName("8ball")
     .setDescription("ask something")
-    .addStringOption(o => o.setName("question").setRequired(true))
+    .addStringOption(o =>
+      o.setName("question")
+        .setDescription("your question") // ✅ THIS FIXES EVERYTHING
+        .setRequired(true)
+    )
 ];
 
 // ======================

@@ -76,6 +76,7 @@ const embed = (t, d) =>
 const mod = require("./commands/moderation/mod.js");
 const configCmd = require("./commands/config/config.js");
 const util = require("./commands/utility/util.js");
+const economy = require("./commands/economy/economy.js");
 
 // ======================
 // ⚡ SLASH COMMANDS
@@ -149,9 +150,10 @@ client.on("messageCreate", async (message) => {
 
   // 🔥 RUN MODULES (SAFE)
   try {
-    mod.run(client, message, [cmd, ...args], embed, data, save);
-    configCmd.run(client, message, [cmd, ...args], embed, data, save);
-    util.run(client, message, [cmd, ...args], embed, data, save);
+   mod.run(client, message, [cmd, ...args], embed, data, save);
+configCmd.run(client, message, [cmd, ...args], embed, data, save);
+util.run(client, message, [cmd, ...args], embed, data, save);
+economy.run(client, message, [cmd, ...args], embed, data, save, getUser);
   } catch (e) {
     console.error(e);
   }

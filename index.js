@@ -82,21 +82,90 @@ const economy = require("./commands/economy/economy.js");
 // ⚡ SLASH COMMANDS
 // ======================
 const slashCommands = [
+
+  // 💰 ECONOMY
   new SlashCommandBuilder().setName("balance").setDescription("check balance"),
   new SlashCommandBuilder().setName("daily").setDescription("daily reward"),
   new SlashCommandBuilder().setName("work").setDescription("work"),
   new SlashCommandBuilder().setName("spin").setDescription("spin"),
+  new SlashCommandBuilder()
+    .setName("rob")
+    .setDescription("rob someone")
+    .addUserOption(o=>o.setName("target").setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName("deposit")
+    .setDescription("deposit money")
+    .addIntegerOption(o=>o.setName("amount").setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName("withdraw")
+    .setDescription("withdraw money")
+    .addIntegerOption(o=>o.setName("amount").setRequired(true)),
+
+  // 🧰 ITEMS
+  new SlashCommandBuilder().setName("inventory").setDescription("view inventory"),
+  new SlashCommandBuilder().setName("shop").setDescription("view shop"),
+  new SlashCommandBuilder()
+    .setName("buy")
+    .setDescription("buy item")
+    .addStringOption(o=>o.setName("item").setRequired(true))
+    .addIntegerOption(o=>o.setName("amount")),
+
+  new SlashCommandBuilder()
+    .setName("use")
+    .setDescription("use item")
+    .addStringOption(o=>o.setName("item").setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName("sell")
+    .setDescription("sell item")
+    .addStringOption(o=>o.setName("item").setRequired(true))
+    .addIntegerOption(o=>o.setName("amount")),
+
+  // 📈 PROGRESS
   new SlashCommandBuilder().setName("level").setDescription("level"),
   new SlashCommandBuilder().setName("leaderboard").setDescription("top"),
-  new SlashCommandBuilder().setName("inventory").setDescription("view inventory"),
+  new SlashCommandBuilder().setName("profile").setDescription("profile"),
+  new SlashCommandBuilder().setName("streak").setDescription("streak"),
+
+  // 🛠️ UTILITY
+  new SlashCommandBuilder().setName("userinfo").setDescription("user info"),
+  new SlashCommandBuilder().setName("serverinfo").setDescription("server info"),
+  new SlashCommandBuilder()
+    .setName("avatar")
+    .setDescription("avatar")
+    .addUserOption(o=>o.setName("user")),
+
+  new SlashCommandBuilder()
+    .setName("poll")
+    .setDescription("create poll")
+    .addStringOption(o=>o.setName("question").setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName("remind")
+    .setDescription("set reminder")
+    .addIntegerOption(o=>o.setName("time").setRequired(true))
+    .addStringOption(o=>o.setName("text").setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName("afk")
+    .setDescription("set afk")
+    .addStringOption(o=>o.setName("reason")),
+
+  new SlashCommandBuilder().setName("botinfo").setDescription("bot info"),
+  new SlashCommandBuilder().setName("invite").setDescription("invite bot"),
+
+  new SlashCommandBuilder()
+    .setName("calc")
+    .setDescription("calculate")
+    .addStringOption(o=>o.setName("expression").setRequired(true)),
+
+  // 🎱 FUN
   new SlashCommandBuilder()
     .setName("8ball")
     .setDescription("ask something")
-    .addStringOption(o =>
-      o.setName("question")
-        .setDescription("your question")
-        .setRequired(true)
-    )
+    .addStringOption(o=>o.setName("question").setRequired(true))
 ];
 
 client.once("clientReady", async () => {
@@ -165,21 +234,43 @@ economy.run(client, message, [cmd, ...args], embed, data, save, getUser);
   // 💜 HELP
   // ======================
   if (cmd === "help") {
-    return message.reply({
-      embeds: [embed("help 📜", `
-💰 balance • daily • work • pay
-🛒 buy • use • sell • shop • inventory
-🔥 streak
-📈 upgradebank • profile
-🏦 bankbalance • deposit • withdraw  
-🎰 spin • rob  
-🎭 roleshop • buyrole  
-📈 level • leaderboard  
-🏆 prestige  
-🎱 8ball  
-      `)]
-    });
-  }
+  return message.reply({
+    embeds: [embed("Orbit Help 💜", `
+💰 **Economy**
+balance • daily • work • spin • rob  
+bankbalance • deposit • withdraw  
+
+🧰 **Items**
+inventory • shop • buy • use • sell  
+
+📈 **Progress**
+level • leaderboard • profile • streak  
+
+🎭 **Roles**
+roleshop • buyrole  
+
+🛠️ **Utility**
+userinfo • serverinfo • avatar • poll  
+remind • afk • botinfo • invite • calc  
+    `)]
+  });
+}
+
+if (cmd === "admhelp") {
+  return message.reply({
+    embeds: [embed("Admin Commands 👮", `
+ban • kick • mute • unmute  
+warn • warnings • clearwarns  
+purge • lock • unlock • slowmode  
+role • removerole  
+
+⚙️ config:
+setprefix • setwelcomechannel  
+setleavechannel • setmodrole  
+config
+    `)]
+  });
+}
 
   // ======================
   // 💰 ECONOMY

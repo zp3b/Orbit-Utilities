@@ -134,6 +134,7 @@ client.on("messageCreate", async (message) => {
   const args = message.content.slice(prefix.length).split(/ +/);
   const cmd = args.shift().toLowerCase();
   const mod = require("./commands/moderation/mod.js");
+configCmd.run(client, message, [cmd, ...args], embed, data, save);
 
 mod.run(client, message, [cmd, ...args], embed, data, save);
 

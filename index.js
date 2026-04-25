@@ -167,14 +167,15 @@ economy.run(client, message, [cmd, ...args], embed, data, save, getUser);
   if (cmd === "help") {
     return message.reply({
       embeds: [embed("help 📜", `
-💰 balance • daily • work • pay  
+💰 balance • daily • work • pay • shop • inventory • buy • use • sell
+🔥 streak
+📈 upgradebank • profile
 🏦 bankbalance • deposit • withdraw  
 🎰 spin • rob  
 🎭 roleshop • buyrole  
 📈 level • leaderboard  
 🏆 prestige  
 🎱 8ball  
-👮 admhelp
       `)]
     });
   }

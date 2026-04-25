@@ -2,10 +2,17 @@ const {
   Client, 
   GatewayIntentBits, 
   PermissionsBitField,
-  EmbedBuilder 
+  EmbedBuilder,
+  REST,
+  Routes,
+  SlashCommandBuilder
 } = require("discord.js");
 
 const fs = require("fs");
+
+// 🔥 anti crash
+process.on("unhandledRejection", console.error);
+process.on("uncaughtException", console.error);
 
 const client = new Client({
   intents: [
@@ -18,26 +25,6 @@ const client = new Client({
 
 const prefix = ".";
 const COLOR = "#2b2d31";
-
-const { REST, Routes, SlashCommandBuilder } = require("discord.js");
-
-const slashCommands = [
-  new SlashCommandBuilder().setName("balance").setDescription("check balance"),
-  new SlashCommandBuilder().setName("daily").setDescription("daily reward"),
-  new SlashCommandBuilder().setName("work").setDescription("work"),
-  new SlashCommandBuilder().setName("spin").setDescription("spin"),
-  new SlashCommandBuilder().setName("level").setDescription("level"),
-  new SlashCommandBuilder().setName("leaderboard").setDescription("top"),
-
-  new SlashCommandBuilder()
-    .setName("8ball")
-    .setDescription("ask something")
-    .addStringOption(o =>
-      o.setName("question")
-        .setDescription("your question") // ✅ THIS FIXES EVERYTHING
-        .setRequired(true)
-    )
-];
 
 // ======================
 // 💾 DATABASE
@@ -77,12 +64,38 @@ const roleShop = {
   elite: { price: 15000, roleId: "PUT_ROLE_ID", desc: "🔥 elite status" }
 };
 
-// ======================
 const embed = (t, d) =>
   new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(t)
-    .setDescription(d)
+    .setDescription(d);
+
+// ======================
+// 🔌 COMMAND FILES
+// ======================
+const mod = require("./commands/moderation/mod.js");
+const configCmd = require("./commands/config/config.js");
+const util = require("./commands/utility/util.js");
+
+// ======================
+// ⚡ SLASH COMMANDS
+// ======================
+const slashCommands = [
+  new SlashCommandBuilder().setName("balance").setDescription("check balance"),
+  new SlashCommandBuilder().setName("daily").setDescription("daily reward"),
+  new SlashCommandBuilder().setName("work").setDescription("work"),
+  new SlashCommandBuilder().setName("spin").setDescription("spin"),
+  new SlashCommandBuilder().setName("level").setDescription("level"),
+  new SlashCommandBuilder().setName("leaderboard").setDescription("top"),
+  new SlashCommandBuilder()
+    .setName("8ball")
+    .setDescription("ask something")
+    .addStringOption(o =>
+      o.setName("question")
+        .setDescription("your question")
+        .setRequired(true)
+    )
+];
 
 client.once("clientReady", async () => {
   console.log("blur online 💜");
@@ -102,14 +115,14 @@ client.once("clientReady", async () => {
 });
 
 // ======================
+// 💬 MESSAGE SYSTEM
+// ======================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
   const user = getUser(message.author.id);
 
-  // ======================
-  // 📈 XP SYSTEM
-  // ======================
+  // XP SYSTEM
   const xpGain = Math.floor(Math.random()*15)+5;
   user.xp += xpGain;
 
@@ -132,15 +145,18 @@ client.on("messageCreate", async (message) => {
   if (!message.content.startsWith(prefix)) return;
 
   const args = message.content.slice(prefix.length).split(/ +/);
-  const cmd = args.shift().toLowerCase();
-  const mod = require("./commands/moderation/mod.js");
-  const util = require("./commands/utility/util.js");
-configCmd.run(client, message, [cmd, ...args], embed, data, save);
+  const cmd = args.shift()?.toLowerCase();
 
-mod.run(client, message, [cmd, ...args], embed, data, save);
-util.run(client, message, [cmd, ...args], embed, data, save);
+  // 🔥 RUN MODULES (SAFE)
+  try {
+    mod.run(client, message, [cmd, ...args], embed, data, save);
+    configCmd.run(client, message, [cmd, ...args], embed, data, save);
+    util.run(client, message, [cmd, ...args], embed, data, save);
+  } catch (e) {
+    console.error(e);
+  }
 
-  const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.Administrator);
+  const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
 
   // ======================
   // 💜 HELP
@@ -350,6 +366,9 @@ a: **${res}**
 
 });
 
+// ======================
+// ⚡ SLASH HANDLER
+// ======================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -358,44 +377,15 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "balance") {
     return interaction.reply({
       embeds: [embed("balance", `
-wallet: **${user.orbits}**
-bank: **${user.bank}/${user.bankLimit}**
+wallet: ${user.orbits}
+bank: ${user.bank}/${user.bankLimit}
       `)]
     });
   }
 
-  if (interaction.commandName === "daily") {
-    const reward = Math.floor(Math.random()*200)+150;
-    user.orbits += reward;
-    save();
-    return interaction.reply(`+${reward}`);
-  }
-
-  if (interaction.commandName === "work") {
-    const earn = Math.floor(Math.random()*150)+50;
-    user.orbits += earn;
-    save();
-    return interaction.reply(`+${earn}`);
-  }
-
-  if (interaction.commandName === "spin") {
-    const reward = Math.floor(Math.random()*400);
-    user.orbits += reward;
-    save();
-    return interaction.reply(`+${reward}`);
-  }
-
-  if (interaction.commandName === "level") {
-    return interaction.reply(`level: ${user.level}`);
-  }
-
-  if (interaction.commandName === "leaderboard") {
-    return interaction.reply("use .leaderboard for now");
-  }
-
   if (interaction.commandName === "8ball") {
     const q = interaction.options.getString("question");
-    const responses = ["yes","no","maybe","unlikely"];
+    const responses = ["yes","no","maybe"];
     const res = responses[Math.floor(Math.random()*responses.length)];
 
     return interaction.reply(`q: ${q}\na: ${res}`);

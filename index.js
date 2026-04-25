@@ -133,6 +133,9 @@ client.on("messageCreate", async (message) => {
 
   const args = message.content.slice(prefix.length).split(/ +/);
   const cmd = args.shift().toLowerCase();
+  const mod = require("./commands/moderation/mod.js");
+
+mod.run(client, message, [cmd, ...args], embed, data, save);
 
   const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.ManageRoles);
 

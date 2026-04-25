@@ -475,6 +475,45 @@ client.on("interactionCreate", async (interaction) => {
       embeds: [embed("balance", `
 wallet: ${user.orbits}
 bank: ${user.bank}/${user.bankLimit}
+}
+
+if (interaction.commandName === "inventory") {
+  const inv = Object.entries(user.inventory || {})
+    .map(([k,v]) => `${k} x${v}`).join("\n") || "empty";
+  return interaction.reply(inv);
+}
+
+if (interaction.commandName === "shop") {
+  return interaction.reply("use .shop for now");
+}
+
+if (interaction.commandName === "profile") {
+  return interaction.reply(`level ${user.level} | 💜 ${user.orbits}`);
+}
+
+if (interaction.commandName === "streak") {
+  return interaction.reply(`🔥 ${user.streak}`);
+}
+
+if (interaction.commandName === "deposit") {
+  const amt = interaction.options.getInteger("amount");
+  if (user.orbits < amt) return interaction.reply("no money");
+
+  user.orbits -= amt;
+  user.bank += amt;
+  save();
+  return interaction.reply(`deposited ${amt}`);
+}
+
+if (interaction.commandName === "withdraw") {
+  const amt = interaction.options.getInteger("amount");
+  if (user.bank < amt) return interaction.reply("no bank");
+
+  user.bank -= amt;
+  user.orbits += amt;
+  save();
+  return interaction.reply(`withdrew ${amt}`);
+}
       `)]
     });
   }

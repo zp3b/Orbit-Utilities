@@ -470,60 +470,272 @@ client.on("interactionCreate", async (interaction) => {
 
   const user = getUser(interaction.user.id);
 
-  if (interaction.commandName === "balance") {
-    return interaction.reply({
-      embeds: [embed("balance", `
-wallet: ${user.orbits}
-bank: ${user.bank}/${user.bankLimit}
-}
+  try {
 
-if (interaction.commandName === "inventory") {
-  const inv = Object.entries(user.inventory || {})
-    .map(([k,v]) => `${k} x${v}`).join("\n") || "empty";
-  return interaction.reply(inv);
-}
+    // ======================
+    // 💰 ECONOMY
+    // ======================
+    if (interaction.commandName === "balance") {
+      return interaction.reply({
+        embeds: [embed("balance 💜", `
+💰 wallet: **${user.orbits}**
+🏦 bank: **${user.bank}/${user.bankLimit}**
+🏆 prestige: **${user.prestige}**
+        `)]
+      });
+    }
 
-if (interaction.commandName === "shop") {
-  return interaction.reply("use .shop for now");
-}
+    if (interaction.commandName === "daily") {
+      if (Date.now() - user.lastDaily < 86400000)
+        return interaction.reply({ content: "already claimed", ephemeral: true });
 
-if (interaction.commandName === "profile") {
-  return interaction.reply(`level ${user.level} | 💜 ${user.orbits}`);
-}
+      const reward = Math.floor(Math.random()*200)+150;
+      user.orbits += reward;
+      user.lastDaily = Date.now();
+      save();
 
-if (interaction.commandName === "streak") {
-  return interaction.reply(`🔥 ${user.streak}`);
-}
+      return interaction.reply(`+${reward}`);
+    }
 
-if (interaction.commandName === "deposit") {
-  const amt = interaction.options.getInteger("amount");
-  if (user.orbits < amt) return interaction.reply("no money");
+    if (interaction.commandName === "work") {
+      const earn = Math.floor(Math.random()*150)+50;
+      user.orbits += earn;
+      save();
 
-  user.orbits -= amt;
-  user.bank += amt;
-  save();
-  return interaction.reply(`deposited ${amt}`);
-}
+      return interaction.reply(`+${earn}`);
+    }
 
-if (interaction.commandName === "withdraw") {
-  const amt = interaction.options.getInteger("amount");
-  if (user.bank < amt) return interaction.reply("no bank");
+    if (interaction.commandName === "spin") {
+      const reward = Math.floor(Math.random()*400);
+      user.orbits += reward;
+      save();
 
-  user.bank -= amt;
-  user.orbits += amt;
-  save();
-  return interaction.reply(`withdrew ${amt}`);
-}
-      `)]
-    });
-  }
+      return interaction.reply(`+${reward}`);
+    }
 
-  if (interaction.commandName === "8ball") {
-    const q = interaction.options.getString("question");
-    const responses = ["yes","no","maybe"];
-    const res = responses[Math.floor(Math.random()*responses.length)];
+    if (interaction.commandName === "rob") {
+      const target = interaction.options.getUser("target");
 
-    return interaction.reply(`q: ${q}\na: ${res}`);
+      if (!target || target.id === interaction.user.id)
+        return interaction.reply({ content: "invalid target", ephemeral: true });
+
+      const t = getUser(target.id);
+
+      if (t.orbits <= 0)
+        return interaction.reply("target broke");
+
+      const steal = Math.floor(Math.random()*Math.min(200, t.orbits));
+
+      user.orbits += steal;
+      t.orbits -= steal;
+      save();
+
+      return interaction.reply(`stole ${steal} 💀`);
+    }
+
+    // ======================
+    // 🏦 BANK
+    // ======================
+    if (interaction.commandName === "deposit") {
+      const amt = interaction.options.getInteger("amount");
+
+      if (user.orbits < amt)
+        return interaction.reply({ content: "not enough", ephemeral: true });
+
+      if (user.bank + amt > user.bankLimit)
+        return interaction.reply({ content: "bank full", ephemeral: true });
+
+      user.orbits -= amt;
+      user.bank += amt;
+      save();
+
+      return interaction.reply(`deposited ${amt} 💜`);
+    }
+
+    if (interaction.commandName === "withdraw") {
+      const amt = interaction.options.getInteger("amount");
+
+      if (user.bank < amt)
+        return interaction.reply({ content: "not enough in bank", ephemeral: true });
+
+      user.bank -= amt;
+      user.orbits += amt;
+      save();
+
+      return interaction.reply(`withdrew ${amt} 💜`);
+    }
+
+    // ======================
+    // 🧰 INVENTORY
+    // ======================
+    if (interaction.commandName === "inventory") {
+      const inv = Object.entries(user.inventory || {})
+        .map(([k,v]) => `${k} x${v}`).join("\n") || "empty";
+
+      return interaction.reply({
+        embeds: [embed("inventory 🧰", inv)]
+      });
+    }
+
+    if (interaction.commandName === "shop") {
+      return interaction.reply({
+        embeds: [embed("shop 🛒", `
+apple — 💜 100
+laptop — 💜 2000
+potion — 💜 500
+        `)]
+      });
+    }
+
+    if (interaction.commandName === "buy") {
+      const item = interaction.options.getString("item");
+      const amt = interaction.options.getInteger("amount") || 1;
+
+      const prices = { apple:100, laptop:2000, potion:500 };
+
+      if (!prices[item])
+        return interaction.reply({ content: "invalid item", ephemeral: true });
+
+      const cost = prices[item] * amt;
+
+      if (user.orbits < cost)
+        return interaction.reply({ content: "not enough", ephemeral: true });
+
+      user.orbits -= cost;
+      user.inventory[item] = (user.inventory[item]||0)+amt;
+      save();
+
+      return interaction.reply(`bought ${item} x${amt}`);
+    }
+
+    if (interaction.commandName === "use") {
+      const item = interaction.options.getString("item");
+
+      if (!user.inventory[item])
+        return interaction.reply({ content: "you don’t have that", ephemeral: true });
+
+      user.inventory[item]--;
+
+      if (item === "apple") user.orbits += 50;
+      if (item === "potion") user.xp += 50;
+
+      save();
+
+      return interaction.reply(`used ${item}`);
+    }
+
+    if (interaction.commandName === "sell") {
+      const item = interaction.options.getString("item");
+      const amt = interaction.options.getInteger("amount") || 1;
+
+      const sell = { apple:50, laptop:1200, potion:250 };
+
+      if (!user.inventory[item])
+        return interaction.reply("you don’t have that");
+
+      user.inventory[item] -= amt;
+      user.orbits += sell[item] * amt;
+
+      save();
+
+      return interaction.reply(`sold ${item} x${amt}`);
+    }
+
+    // ======================
+    // 📈 PROGRESS
+    // ======================
+    if (interaction.commandName === "level") {
+      return interaction.reply(`level: ${user.level}`);
+    }
+
+    if (interaction.commandName === "leaderboard") {
+      return interaction.reply("use .leaderboard for now");
+    }
+
+    if (interaction.commandName === "profile") {
+      return interaction.reply({
+        embeds: [embed("profile 📈", `
+level: **${user.level}**
+orbits: **${user.orbits}**
+bank: **${user.bank}**
+streak: **${user.streak}**
+        `)]
+      });
+    }
+
+    if (interaction.commandName === "streak") {
+      return interaction.reply(`🔥 ${user.streak}`);
+    }
+
+    // ======================
+    // 🎱 FUN
+    // ======================
+    if (interaction.commandName === "8ball") {
+      const q = interaction.options.getString("question");
+      const responses = ["yes","no","maybe","unlikely","definitely"];
+      const res = responses[Math.floor(Math.random()*responses.length)];
+
+      return interaction.reply({
+        embeds: [embed("8ball 🎱", `q: ${q}\na: **${res}**`)]
+      });
+    }
+
+    // ======================
+    // 🛠️ UTILITY (BASIC)
+    // ======================
+    if (interaction.commandName === "avatar") {
+      const target = interaction.options.getUser("user") || interaction.user;
+
+      return interaction.reply(target.displayAvatarURL({ size: 1024 }));
+    }
+
+    if (interaction.commandName === "userinfo") {
+      return interaction.reply(`${interaction.user.tag}`);
+    }
+
+    if (interaction.commandName === "serverinfo") {
+      return interaction.reply(`${interaction.guild.name}`);
+    }
+
+    if (interaction.commandName === "botinfo") {
+      return interaction.reply("blur bot 💜");
+    }
+
+    if (interaction.commandName === "invite") {
+      return interaction.reply("invite link soon");
+    }
+
+    if (interaction.commandName === "calc") {
+      const exp = interaction.options.getString("expression");
+
+      try {
+        const result = eval(exp);
+        return interaction.reply(`= ${result}`);
+      } catch {
+        return interaction.reply("invalid");
+      }
+    }
+
+    if (interaction.commandName === "afk") {
+      return interaction.reply("afk set");
+    }
+
+    if (interaction.commandName === "poll") {
+      const q = interaction.options.getString("question");
+
+      const msg = await interaction.reply({ content: `📊 ${q}`, fetchReply: true });
+
+      await msg.react("👍");
+      await msg.react("👎");
+    }
+
+    if (interaction.commandName === "remind") {
+      return interaction.reply("reminder set (basic)");
+    }
+
+  } catch (err) {
+    console.error(err);
+    return interaction.reply({ content: "error occurred", ephemeral: true });
   }
 });
 
